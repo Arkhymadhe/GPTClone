@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import numpy as np
 
 
 class Attention(nn.Module):
@@ -49,12 +50,18 @@ class Attention(nn.Module):
 
 class MultiHeadAttention(nn.Module):
     def __init__(
-        self, states=None, transform_states=False, hidden_dim=128, num_heads=32
+        self,
+        states=None,
+        transform_states=False,
+        narrow=False,
+        hidden_dim=128,
+        num_heads=32,
     ):
         super().__init__()
         self.num_heads = num_heads
         self.hidden_dim = hidden_dim
         self.attention_scores = None
+        self.narrow=narrow
 
         if isinstance(transform_states, list):
             if len(transform_states) < num_heads:
@@ -64,14 +71,26 @@ class MultiHeadAttention(nn.Module):
 
         self.attention_heads = [
             Attention(
-                states=states, transform_states=ts, hidden_dim=hidden_dim
+                states=states,
+                transform_states=ts,
+                hidden_dim=int(hidden_dim * 0.5) if (self.narrow & ts) else hidden_dim,
             )
             for ts in transform_states
         ]
 
+        self.transform_states = transform_states
+
         self.attention_heads = nn.ModuleList(self.attention_heads)
 
         self.context_transform = nn.LazyLinear(out_features=self.hidden_dim)
+
+        if narrow:
+            #self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
+            self.query_transforms = nn.ModuleList(
+                [
+                    nn.LazyLinear(out_features=(int(hidden_dim * 0.5)) if (self.narrow & ts) else hidden_dim) for ts in transform_states
+                ]
+            )
 
     def set_states(self, states):
         for head in self.attention_heads:
@@ -86,7 +105,20 @@ class MultiHeadAttention(nn.Module):
         return
 
     def forward(self, query, mask=None):
-        context_vectors = [head(query, mask=mask) for head in self.attention_heads]
+        #query = self.query_transform(query) if self.narrow else query
+        #context_vectors = [head(query, mask=mask) for head in self.attention_heads]
+
+        if self.narrow:
+            queries = [
+                (transform(query) if ts else query) for ts, transform in zip(self.transform_states, self.query_transforms)
+            ]
+        else:
+            queries = [query]*self.num_heads
+
+        print(queries[0].shape)
+
+        context_vectors = [head(qry, mask=mask) for head, qry in zip(self.attention_heads, queries)]
+
         context_vectors = torch.concat(context_vectors, dim=-1)
 
         return self.context_transform(context_vectors)
@@ -96,11 +128,22 @@ if __name__ == "__main__":
     x = torch.randn(size=(32, 5, 128))
     query = torch.randn(size=(32, 10, 128))
 
-    transform_states = [
-        True, False, True, False,
-    ]
+    num_heads = 5
 
-    attn = MultiHeadAttention(num_heads=4, transform_states=transform_states, states=x)
+    prob = np.random.randint(low=0, high=11, size=(1,))/10
+
+    if prob >= .5:
+        transform_states = [
+            np.random.choice([True, False]) for _ in range(num_heads)
+        ]
+    else:
+        inner_prob = np.random.randint(low=0, high=11, size=(1,))/10
+        if inner_prob >= .5:
+            transform_states = True
+        else:
+            transform_states = False
+
+    attn = MultiHeadAttention(num_heads=num_heads, transform_states=False, narrow=True, states=x)
 
     ans = attn(x)
 
@@ -113,6 +156,8 @@ if __name__ == "__main__":
 
     print("Attention scores shape: ", attn.attention_scores.shape)
     print("Context vector shape: ", ans.shape, end="\n\n")
+
+    print(attn.transform_states)
 
     for name, param in attn.named_parameters():
         print(name, " : ", param.shape)
