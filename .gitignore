@@ -1,3 +1,4 @@
 /*.py
 .idea/*
 scripts/../
+scripts/__pycache__/*

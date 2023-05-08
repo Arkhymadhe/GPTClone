@@ -90,24 +90,3 @@ class Decoder(nn.Module):
         decoder_predictions = self.transform_vector(attn_embeddings_2)
 
         return decoder_predictions
-
-
-if __name__ == "__main__":
-    x = torch.randn(size=(32, 5, 128))
-    query = torch.randint(size=(32, 10), low=0, high=10)
-
-    attn = Decoder(num_heads=2, narrow=False, transform_states=True)
-    attn.set_states(states=x, cross=True)
-
-    if hasattr(attn.self_attention.attention_heads[0], "keys_mlp"):
-        print(True)
-    else:
-        print(False)
-
-    ans = attn(query)
-
-    # print("Attention scores shape: ", attn.attention_scores.shape)
-    print("Context vector shape: ", ans.shape, end="\n\n")
-
-    for name, param in attn.named_parameters():
-        print(name, " : ", param.shape)
