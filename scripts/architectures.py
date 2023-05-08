@@ -24,7 +24,7 @@ class Encoder(nn.Module):
             narrow=narrow
         )
         self.transform_vector = nn.Sequential(
-            nn.LazyLinear(out_features=int(embedding_dim * 1.5)),
+            nn.Linear(in_features=embedding_dim, out_features=int(embedding_dim * 1.5)),
             nn.LeakyReLU(negative_slope=0.2),
             nn.LazyLinear(out_features=embedding_dim),
         )
@@ -66,7 +66,7 @@ class Decoder(nn.Module):
             hidden_dim=embedding_dim,
         )
         self.transform_vector = nn.Sequential(
-            nn.LazyLinear(out_features=int(embedding_dim * 1.5)),
+            nn.Linear(in_features=embedding_dim, out_features=int(embedding_dim * 1.5)),
             nn.LeakyReLU(negative_slope=0.2),
             nn.LazyLinear(out_features=num_embeddings),
         )
@@ -88,5 +88,20 @@ class Decoder(nn.Module):
         attn_embeddings_2 = self.cross_attention(attn_embeddings_1, mask=source_mask)
 
         decoder_predictions = self.transform_vector(attn_embeddings_2)
+
+        return decoder_predictions
+
+
+class EncoderDecoder(nn.Module):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, x_encoder, x_decoder):
+        encoder_states = self.encoder(x_encoder)
+        self.decoder.set_states(encoder_states, cross=True)
+
+        decoder_predictions = self.decoder(x_decoder)
 
         return decoder_predictions
