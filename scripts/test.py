@@ -3,8 +3,9 @@ import torch
 from attention import Attention, MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
 
-if __name__ == "__main__":
+from torchinfo import summary
 
+if __name__ == "__main__":
     test = input("Which script to test: ")
 
     assert test.lower() in [
@@ -12,11 +13,10 @@ if __name__ == "__main__":
         "encoder",
         "decoder",
         "encdec",
-        "transformer"
+        "transformer",
     ], """ `test` must be one of "attention", "encoder", "decoder", "encdec", "transformer"."""
 
     if test.lower() == "encoder":
-
         print("Testing Encoder\n")
         x = torch.randn(size=(32, 5, 128))
         query = torch.randn(size=(32, 10, 128))
@@ -32,29 +32,31 @@ if __name__ == "__main__":
             print(name, " : ", param.shape)
 
     elif test.lower() == "attention":
-        print("Testing attention\n")
+        print("Testing attention...\n")
 
         x = torch.randn(size=(32, 5, 128))
         query = torch.randn(size=(32, 10, 128))
 
-        num_heads = 5
+        num_heads = 16
 
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
-        if prob >= .5:
+        if prob >= 0.5:
             transform_states = [
                 np.random.choice([True, False]) for _ in range(num_heads)
             ]
         else:
             inner_prob = torch.randint(low=0, high=11, size=(1,)) / 10
-            if inner_prob >= .5:
+            if inner_prob >= 0.5:
                 transform_states = True
             else:
                 transform_states = False
 
-        attn = MultiHeadAttention(num_heads=num_heads, transform_states=False, narrow=True, states=x)
+        attn = MultiHeadAttention(
+            num_heads=num_heads, transform_states=False, narrow=True, states=x
+        )
 
-        ans = attn(x)
+        ans = attn(query)
 
         if hasattr(attn.attention_heads[0], "keys_mlp"):
             print(True)
@@ -81,13 +83,13 @@ if __name__ == "__main__":
 
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
-        if prob >= .5:
+        if prob >= 0.5:
             transform_states = [
                 np.random.choice([True, False]) for _ in range(num_heads)
             ]
         else:
             inner_prob = np.random.randint(low=0, high=11, size=(1,)) / 10
-            if inner_prob >= .5:
+            if inner_prob >= 0.5:
                 transform_states = True
             else:
                 transform_states = False
@@ -112,13 +114,13 @@ if __name__ == "__main__":
 
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
-        if prob >= .5:
+        if prob >= 0.5:
             transform_states = [
                 np.random.choice([True, False]) for _ in range(num_heads)
             ]
         else:
             inner_prob = np.random.randint(low=0, high=11, size=(1,)) / 10
-            if inner_prob >= .5:
+            if inner_prob >= 0.5:
                 transform_states = True
             else:
                 transform_states = False
@@ -141,15 +143,31 @@ if __name__ == "__main__":
         num_encoder_embeddings = 12
         num_decoder_embeddings = 200
 
-        x = torch.randint(low=0, high=num_encoder_embeddings, size=(32, 5,))
-        query = torch.randint(low=0, high=num_decoder_embeddings, size=(32, 10,))
+        x = torch.randint(
+            low=0,
+            high=num_encoder_embeddings,
+            size=(
+                32,
+                5,
+            ),
+        )
+        query = torch.randint(
+            low=0,
+            high=num_decoder_embeddings,
+            size=(
+                32,
+                10,
+            ),
+        )
 
         transformer = Transformer(
             num_decoder_embeddings=num_decoder_embeddings,
             num_encoder_embeddings=num_encoder_embeddings,
-            transform_states=True
+            transform_states=False,
         )
 
         ans = transformer(x, query)
 
         print(ans.shape)
+
+        print(summary(transformer, [x, query]))

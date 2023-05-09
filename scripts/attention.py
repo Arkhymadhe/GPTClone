@@ -16,8 +16,12 @@ class Attention(nn.Module):
         self.attention_scores = None
 
         if transform_states:
-            self.values_mlp = nn.Linear(in_features=hidden_dim, out_features=self.hidden_dim)
-            self.keys_mlp = nn.Linear(in_features=hidden_dim, out_features=self.hidden_dim)
+            self.values_mlp = nn.Linear(
+                in_features=hidden_dim, out_features=self.hidden_dim
+            )
+            self.keys_mlp = nn.Linear(
+                in_features=hidden_dim, out_features=self.hidden_dim
+            )
 
     def set_states(self, states):
         self.states = states
@@ -61,7 +65,7 @@ class MultiHeadAttention(nn.Module):
         self.num_heads = num_heads
         self.hidden_dim = hidden_dim
         self.attention_scores = None
-        self.narrow=narrow
+        self.narrow = narrow
 
         if isinstance(transform_states, list):
             if len(transform_states) < num_heads:
@@ -83,17 +87,19 @@ class MultiHeadAttention(nn.Module):
         self.attention_heads = nn.ModuleList(self.attention_heads)
 
         self.context_transform = nn.Linear(
-            in_features = sum([head.hidden_dim for head in self.attention_heads]),
-            out_features=self.hidden_dim
+            in_features=sum([head.hidden_dim for head in self.attention_heads]),
+            out_features=self.hidden_dim,
         )
 
         if narrow:
-            #self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
+            # self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
             self.query_transforms = nn.ModuleList(
                 [
                     nn.Linear(
-                        in_features = hidden_dim,
-                        out_features=(int(hidden_dim * 0.5)) if (self.narrow & ts) else hidden_dim
+                        in_features=hidden_dim,
+                        out_features=(int(hidden_dim * 0.5))
+                        if (self.narrow & ts)
+                        else hidden_dim,
                     )
                     for ts in transform_states
                 ]
@@ -107,20 +113,21 @@ class MultiHeadAttention(nn.Module):
 
     def get_attention_scores(self):
         self.attention_scores = torch.stack(
-            [head.attention_scores for head in self.attention_heads], dim=0
+            [head.attention_scores for head in self.attention_heads], dim=1
         )
         return
 
     def forward(self, query, mask=None):
-        #query = self.query_transform(query) if self.narrow else query
-        #context_vectors = [head(query, mask=mask) for head in self.attention_heads]
+        # query = self.query_transform(query) if self.narrow else query
+        # context_vectors = [head(query, mask=mask) for head in self.attention_heads]
 
         if self.narrow:
             queries = [
-                (transform(query) if ts else query) for ts, transform in zip(self.transform_states, self.query_transforms)
+                (transform(query) if ts else query)
+                for ts, transform in zip(self.transform_states, self.query_transforms)
             ]
         else:
-            queries = [query]*self.num_heads
+            queries = [query] * self.num_heads
 
         context_vectors = [
             head(qry, mask=mask) for head, qry in zip(self.attention_heads, queries)
