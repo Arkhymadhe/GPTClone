@@ -143,14 +143,24 @@ if __name__ == "__main__":
         num_encoder_embeddings = 12
         num_decoder_embeddings = 200
 
-        x = torch.randint(
-            low=0,
-            high=num_encoder_embeddings,
-            size=(
-                32,
-                5,
-            ),
-        )
+        prob = torch.randn(size=(1,))
+
+        if prob >= .5:
+            print("Using Encoder-Decoder Transformer architecture...\n")
+            x = torch.randint(
+                low=0,
+                high=num_encoder_embeddings,
+                size=(
+                    32,
+                    5,
+                ),
+            )
+            decoder_only = False
+        else:
+            print("Using Transformer-Encoder architecture (No Encoder)...\n")
+            x = torch.randn(size=(32, 5, 128))
+            decoder_only = True
+
         query = torch.randint(
             low=0,
             high=num_decoder_embeddings,
@@ -160,14 +170,28 @@ if __name__ == "__main__":
             ),
         )
 
+        transform_states = True
+
         transformer = Transformer(
             num_decoder_embeddings=num_decoder_embeddings,
             num_encoder_embeddings=num_encoder_embeddings,
-            transform_states=False,
+            transform_states=transform_states,
+            decoder_only=decoder_only
         )
 
         ans = transformer(x, query)
 
         print(ans.shape)
 
-        print(summary(transformer, [x, query]))
+        print(
+            summary(
+                transformer,
+                input_data=[x, query],
+                depth=6,
+                batch_dim=None,
+                device="cpu",
+            )
+        )
+
+        print("`decoder_only` : ", decoder_only)
+        print("`transform_states`: ", transform_states)

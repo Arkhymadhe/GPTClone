@@ -105,15 +105,15 @@ class EncoderDecoder(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x_encoder, x_decoder, train=True):
-        encoder_states = self.encoder(x_encoder)
+    def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None,train=True):
+        encoder_states = self.encoder(x_encoder, mask=source_mask)
         self.decoder.set_states(encoder_states, cross=True)
 
         if train:
-            decoder_predictions = self.decoder(x_decoder, encoder_states)
+            decoder_predictions = self.decoder(x_decoder, encoder_states, source_mask=source_mask, target_mask=target_mask)
         else:
             while x_decoder.shape[-1] < self.prediction_len:
-                decoder_predictions = self.decoder(x_decoder, encoder_states)
+                decoder_predictions = self.decoder(x_decoder, encoder_states, source_mask=source_mask, target_mask=target_mask)
                 x_decoder = torch.cat(
                     [x_decoder, self.decode_tokens(decoder_predictions)], dim=-1
                 )
@@ -136,18 +136,22 @@ class Transformer(nn.Module):
         narrow=False,
         hidden_dim=128,
         num_heads=32,
+        decoder_only=False
     ):
         super(Transformer, self).__init__()
 
-        self.encoder = TransformerEncoder(
-            num_encoder_embeddings=num_encoder_embeddings,
-            states=states,
-            transform_states=transform_states,
-            narrow=narrow,
-            hidden_dim=hidden_dim,
-            num_heads=num_heads,
-            num_encoder_blocks=num_encoder_blocks,
-        )
+        self.decoder_only = decoder_only
+
+        if not self.decoder_only:
+            self.encoder = TransformerEncoder(
+                num_encoder_embeddings=num_encoder_embeddings,
+                states=states,
+                transform_states=transform_states,
+                narrow=narrow,
+                hidden_dim=hidden_dim,
+                num_heads=num_heads,
+                num_encoder_blocks=num_encoder_blocks,
+            )
 
         self.decoder = TransformerDecoder(
             num_decoder_embeddings=num_decoder_embeddings,
@@ -168,7 +172,8 @@ class Transformer(nn.Module):
         )
 
     def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
-        x_encoder = self.encoder(x_encoder, source_mask=source_mask)
+        if not self.decoder_only:
+            x_encoder = self.encoder(x_encoder, source_mask=source_mask)
 
         x_decoder = self.decoder(
             x_decoder, x_encoder, source_mask=source_mask, target_mask=target_mask
