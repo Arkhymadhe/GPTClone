@@ -16,8 +16,8 @@ class Attention(nn.Module):
         self.attention_scores = None
 
         if transform_states:
-            self.values_mlp = nn.LazyLinear(out_features=self.hidden_dim)
-            self.keys_mlp = nn.LazyLinear(out_features=self.hidden_dim)
+            self.values_mlp = nn.Linear(in_features=hidden_dim, out_features=self.hidden_dim)
+            self.keys_mlp = nn.Linear(in_features=hidden_dim, out_features=self.hidden_dim)
 
     def set_states(self, states):
         self.states = states
@@ -82,13 +82,20 @@ class MultiHeadAttention(nn.Module):
 
         self.attention_heads = nn.ModuleList(self.attention_heads)
 
-        self.context_transform = nn.LazyLinear(out_features=self.hidden_dim)
+        self.context_transform = nn.Linear(
+            in_features = sum([head.hidden_dim for head in self.attention_heads]),
+            out_features=self.hidden_dim
+        )
 
         if narrow:
             #self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
             self.query_transforms = nn.ModuleList(
                 [
-                    nn.LazyLinear(out_features=(int(hidden_dim * 0.5)) if (self.narrow & ts) else hidden_dim) for ts in transform_states
+                    nn.Linear(
+                        in_features = hidden_dim,
+                        out_features=(int(hidden_dim * 0.5)) if (self.narrow & ts) else hidden_dim
+                    )
+                    for ts in transform_states
                 ]
             )
 
@@ -115,9 +122,9 @@ class MultiHeadAttention(nn.Module):
         else:
             queries = [query]*self.num_heads
 
-        print(queries[0].shape)
-
-        context_vectors = [head(qry, mask=mask) for head, qry in zip(self.attention_heads, queries)]
+        context_vectors = [
+            head(qry, mask=mask) for head, qry in zip(self.attention_heads, queries)
+        ]
 
         context_vectors = torch.concat(context_vectors, dim=-1)
 

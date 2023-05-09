@@ -1,23 +1,19 @@
 import numpy as np
 import torch
 from attention import Attention, MultiHeadAttention
-from architectures import Decoder, Encoder, EncoderDecoder
+from architectures import Decoder, Encoder, EncoderDecoder, Transformer
 
 if __name__ == "__main__":
 
     test = input("Which script to test: ")
 
     if test.lower() == "encoder":
+
+        print("Testing Encoder\n")
         x = torch.randn(size=(32, 5, 128))
-        query = torch.randint(size=(32, 10), low=0, high=10)
+        query = torch.randn(size=(32, 10, 128))
 
         attn = Encoder(num_heads=2, narrow=False, transform_states=True)
-        attn.set_states(states=x, cross=True)
-
-        if hasattr(attn.self_attention.attention_heads[0], "keys_mlp"):
-            print(True)
-        else:
-            print(False)
 
         ans = attn(query)
 
@@ -42,7 +38,7 @@ if __name__ == "__main__":
                 np.random.choice([True, False]) for _ in range(num_heads)
             ]
         else:
-            inner_prob = np.random.randint(low=0, high=11, size=(1,)) / 10
+            inner_prob = torch.randint(low=0, high=11, size=(1,)) / 10
             if inner_prob >= .5:
                 transform_states = True
             else:
@@ -93,17 +89,7 @@ if __name__ == "__main__":
 
         ans = attn(query)
 
-        if hasattr(attn.attention_heads[0], "keys_mlp"):
-            print(True)
-        else:
-            print(False)
-
-        attn.get_attention_scores()
-
-        print("Attention scores shape: ", attn.attention_scores.shape)
         print("Context vector shape: ", ans.shape, end="\n\n")
-
-        print(attn.transform_states)
 
         for name, param in attn.named_parameters():
             print(name, " : ", param.shape)
@@ -111,8 +97,8 @@ if __name__ == "__main__":
     elif test.lower() == "encdec":
         print("Testing Encoder-Decoder architecture\n")
 
-        x = torch.randint(size=(32, 5), low=0, high=10)
-        query = torch.randint(size=(32, 10), low=0, high=20)
+        x = torch.randn(size=(32, 5, 128))
+        query = torch.randn(size=(32, 10, 128))
 
         num_heads = 5
 
@@ -129,16 +115,33 @@ if __name__ == "__main__":
             else:
                 transform_states = False
 
-        enc = Encoder(num_heads=num_heads, transform_states=True, narrow=True)
-        dec = Decoder(num_heads=num_heads, transform_states=False, narrow=True)
+        enc = Encoder(num_heads=num_heads, transform_states=True, narrow=False)
+        dec = Decoder(num_heads=num_heads, transform_states=False, narrow=False)
 
         attn = EncoderDecoder(encoder=enc, decoder=dec)
 
         ans = attn(x, query)
 
-        print("\n\nEncoder input shape: ", x.shape)
+        print("Encoder input shape: ", x.shape)
         print("Decoder input shape: ", query.shape)
         print("Decoder prediction shape: ", ans.shape, end="\n\n")
 
         for name, param in attn.named_parameters():
             print(name, " : ", param.shape)
+
+    elif test.lower() == "transformer":
+        num_encoder_embeddings = 12
+        num_decoder_embeddings = 200
+
+        x = torch.randint(low=0, high=num_encoder_embeddings, size=(32, 5,))
+        query = torch.randint(low=0, high=num_decoder_embeddings, size=(32, 10,))
+
+        transformer = Transformer(
+            num_decoder_embeddings=num_decoder_embeddings,
+            num_encoder_embeddings=num_encoder_embeddings,
+            transform_states=True
+        )
+
+        ans = transformer(x, query)
+
+        print(ans.shape)
