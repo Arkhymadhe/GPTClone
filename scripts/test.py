@@ -6,9 +6,14 @@ from architectures import Decoder, Encoder, EncoderDecoder, Transformer
 from torchinfo import summary
 
 if __name__ == "__main__":
-    test = input("Which script to test: ")
+    test = input("Which script to test: ").lower()
 
-    assert test.lower() in [
+    while test not in ["attention", "encoder", "decoder", "encdec", "transformer"]:
+        test = input(
+            "Option provided must be in [`attention`, `encoder`, `decoder`, `encdec`, `transformer`]:  "
+        ).lower()
+
+    assert test in [
         "attention",
         "encoder",
         "decoder",
@@ -16,7 +21,7 @@ if __name__ == "__main__":
         "transformer",
     ], """ `test` must be one of "attention", "encoder", "decoder", "encdec", "transformer"."""
 
-    if test.lower() == "encoder":
+    if test == "encoder":
         print("Testing Encoder\n")
         x = torch.randn(size=(32, 5, 128))
         query = torch.randn(size=(32, 10, 128))
@@ -28,10 +33,9 @@ if __name__ == "__main__":
         # print("Attention scores shape: ", attn.attention_scores.shape)
         print("Context vector shape: ", ans.shape, end="\n\n")
 
-        for name, param in attn.named_parameters():
-            print(name, " : ", param.shape)
+        print(summary(attn, input_data=query, device="cpu"))
 
-    elif test.lower() == "attention":
+    elif test == "attention":
         print("Testing attention...\n")
 
         x = torch.randn(size=(32, 5, 128))
@@ -70,10 +74,9 @@ if __name__ == "__main__":
 
         print(attn.transform_states)
 
-        for name, param in attn.named_parameters():
-            print(name, " : ", param.shape)
+        print(summary(attn, input_data=query, device="cpu"))
 
-    elif test.lower() == "decoder":
+    elif test == "decoder":
         print("Testing Decoder\n")
 
         x = torch.randn(size=(32, 5, 128))
@@ -101,10 +104,9 @@ if __name__ == "__main__":
 
         print("Context vector shape: ", ans.shape, end="\n\n")
 
-        for name, param in attn.named_parameters():
-            print(name, " : ", param.shape)
+        print(summary(attn, input_data=query, device="cpu"))
 
-    elif test.lower() == "encdec":
+    elif test == "encdec":
         print("Testing Encoder-Decoder architecture\n")
 
         x = torch.randn(size=(32, 5, 128))
@@ -136,16 +138,15 @@ if __name__ == "__main__":
         print("Decoder input shape: ", query.shape)
         print("Decoder prediction shape: ", ans.shape, end="\n\n")
 
-        for name, param in attn.named_parameters():
-            print(name, " : ", param.shape)
+        print(summary(attn, input_data=[x, query], device="cpu"))
 
-    elif test.lower() == "transformer":
+    elif test == "transformer":
         num_encoder_embeddings = 12
         num_decoder_embeddings = 200
 
         prob = torch.randn(size=(1,))
 
-        if prob >= .5:
+        if prob >= 0.5:
             print("Using Encoder-Decoder Transformer architecture...\n")
             x = torch.randint(
                 low=0,
@@ -170,13 +171,13 @@ if __name__ == "__main__":
             ),
         )
 
-        transform_states = True
+        transform_states = False
 
         transformer = Transformer(
             num_decoder_embeddings=num_decoder_embeddings,
             num_encoder_embeddings=num_encoder_embeddings,
             transform_states=transform_states,
-            decoder_only=decoder_only
+            decoder_only=decoder_only,
         )
 
         ans = transformer(x, query)

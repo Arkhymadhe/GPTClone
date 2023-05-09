@@ -105,15 +105,27 @@ class EncoderDecoder(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None,train=True):
+    def forward(
+        self, x_encoder, x_decoder, source_mask=None, target_mask=None, train=True
+    ):
         encoder_states = self.encoder(x_encoder, mask=source_mask)
         self.decoder.set_states(encoder_states, cross=True)
 
         if train:
-            decoder_predictions = self.decoder(x_decoder, encoder_states, source_mask=source_mask, target_mask=target_mask)
+            decoder_predictions = self.decoder(
+                x_decoder,
+                encoder_states,
+                source_mask=source_mask,
+                target_mask=target_mask,
+            )
         else:
             while x_decoder.shape[-1] < self.prediction_len:
-                decoder_predictions = self.decoder(x_decoder, encoder_states, source_mask=source_mask, target_mask=target_mask)
+                decoder_predictions = self.decoder(
+                    x_decoder,
+                    encoder_states,
+                    source_mask=source_mask,
+                    target_mask=target_mask,
+                )
                 x_decoder = torch.cat(
                     [x_decoder, self.decode_tokens(decoder_predictions)], dim=-1
                 )
@@ -136,7 +148,7 @@ class Transformer(nn.Module):
         narrow=False,
         hidden_dim=128,
         num_heads=32,
-        decoder_only=False
+        decoder_only=False,
     ):
         super(Transformer, self).__init__()
 
