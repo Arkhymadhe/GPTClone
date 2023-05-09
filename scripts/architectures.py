@@ -84,8 +84,10 @@ class Decoder(nn.Module):
 
         return
 
-    def forward(self, x, source_mask=None, target_mask=None):
-        self.self_attention.set_states(x)
+    def forward(self, x, encoder_states=None, source_mask=None, target_mask=None):
+        self.set_states(x, cross=False)
+        if encoder_states is not None:
+            self.set_states(encoder_states, cross=True)
 
         attn_embeddings_1 = self.self_attention(x, mask=target_mask)
         attn_embeddings_2 = self.cross_attention(attn_embeddings_1, mask=source_mask)
@@ -107,10 +109,10 @@ class EncoderDecoder(nn.Module):
         self.decoder.set_states(encoder_states, cross=True)
 
         if train:
-            decoder_predictions = self.decoder(x_decoder)
+            decoder_predictions = self.decoder(x_decoder, encoder_states)
         else:
             while x_decoder.shape[-1] < self.prediction_len:
-                decoder_predictions = self.decoder(x_decoder)
+                decoder_predictions = self.decoder(x_decoder, encoder_states)
                 x_decoder = torch.cat(
                     [
                         x_decoder, self.decode_tokens(decoder_predictions)

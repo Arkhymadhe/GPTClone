@@ -7,6 +7,14 @@ if __name__ == "__main__":
 
     test = input("Which script to test: ")
 
+    assert test.lower() in [
+        "attention",
+        "encoder",
+        "decoder",
+        "encdec",
+        "transformer"
+    ], """ `test` must be one of "attention", "encoder", "decoder", "encdec", "transformer"."""
+
     if test.lower() == "encoder":
 
         print("Testing Encoder\n")
