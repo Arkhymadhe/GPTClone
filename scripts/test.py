@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from attention import Attention, MultiHeadAttention
+from attention import MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
 
 from torchinfo import summary
@@ -13,20 +13,17 @@ if __name__ == "__main__":
             "Option provided must be in [`attention`, `encoder`, `decoder`, `encdec`, `transformer`]:  "
         ).lower()
 
-    assert test in [
-        "attention",
-        "encoder",
-        "decoder",
-        "encdec",
-        "transformer",
-    ], """ `test` must be one of "attention", "encoder", "decoder", "encdec", "transformer"."""
+    x = torch.randn(size=(32, 5, 128))
+    query = torch.randn(size=(32, 10, 128))
+
+    num_heads = 16
+    narrow = True
+    transform_states = True
 
     if test == "encoder":
         print("Testing Encoder\n")
-        x = torch.randn(size=(32, 5, 128))
-        query = torch.randn(size=(32, 10, 128))
 
-        attn = Encoder(num_heads=2, narrow=False, transform_states=True)
+        attn = Encoder(num_heads=num_heads, narrow=narrow, transform_states=transform_states)
 
         ans = attn(query)
 
@@ -37,11 +34,6 @@ if __name__ == "__main__":
 
     elif test == "attention":
         print("Testing attention...\n")
-
-        x = torch.randn(size=(32, 5, 128))
-        query = torch.randn(size=(32, 10, 128))
-
-        num_heads = 16
 
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
@@ -57,7 +49,7 @@ if __name__ == "__main__":
                 transform_states = False
 
         attn = MultiHeadAttention(
-            num_heads=num_heads, transform_states=False, narrow=True, states=x
+            num_heads=num_heads, transform_states=transform_states, narrow=narrow, states=x
         )
 
         ans = attn(query)
@@ -79,11 +71,6 @@ if __name__ == "__main__":
     elif test == "decoder":
         print("Testing Decoder\n")
 
-        x = torch.randn(size=(32, 5, 128))
-        query = torch.randn(size=(32, 10, 128))
-
-        num_heads = 5
-
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
         if prob >= 0.5:
@@ -97,7 +84,7 @@ if __name__ == "__main__":
             else:
                 transform_states = False
 
-        attn = Decoder(num_heads=num_heads, transform_states=False, narrow=True)
+        attn = Decoder(num_heads=num_heads, transform_states=transform_states, narrow=narrow)
         attn.set_states(x, cross=True)
 
         ans = attn(query)
@@ -109,11 +96,6 @@ if __name__ == "__main__":
     elif test == "encdec":
         print("Testing Encoder-Decoder architecture\n")
 
-        x = torch.randn(size=(32, 5, 128))
-        query = torch.randn(size=(32, 10, 128))
-
-        num_heads = 5
-
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
 
         if prob >= 0.5:
@@ -127,8 +109,8 @@ if __name__ == "__main__":
             else:
                 transform_states = False
 
-        enc = Encoder(num_heads=num_heads, transform_states=True, narrow=False)
-        dec = Decoder(num_heads=num_heads, transform_states=False, narrow=False)
+        enc = Encoder(num_heads=num_heads, transform_states=transform_states, narrow=narrow)
+        dec = Decoder(num_heads=num_heads, transform_states=transform_states, narrow=narrow)
 
         attn = EncoderDecoder(encoder=enc, decoder=dec)
 
@@ -158,8 +140,7 @@ if __name__ == "__main__":
             )
             decoder_only = False
         else:
-            print("Using Transformer-Encoder architecture (No Encoder)...\n")
-            x = torch.randn(size=(32, 5, 128))
+            print("Using Transformer-Decoder architecture (No Encoder)...\n")
             decoder_only = True
 
         query = torch.randint(
@@ -170,8 +151,6 @@ if __name__ == "__main__":
                 10,
             ),
         )
-
-        transform_states = False
 
         transformer = Transformer(
             num_decoder_embeddings=num_decoder_embeddings,
