@@ -4,7 +4,7 @@ import numpy as np
 
 
 class Attention(nn.Module):
-    def __init__(self, states=None, transform_states=False, hidden_dim=128):
+    def __init__(self, states=None, transform_states=False, state_dim=128, hidden_dim=128):
         super().__init__()
         self.states = states
         self.transform_states = transform_states
@@ -12,15 +12,16 @@ class Attention(nn.Module):
         self.transformed_keys = None
         self.transformed_values = None
         self.hidden_dim = hidden_dim
+        self.state_dim = state_dim if states is None else states.shape[-1]
 
         self.attention_scores = None
 
         if transform_states:
             self.values_mlp = nn.Linear(
-                in_features=hidden_dim, out_features=self.hidden_dim
+                in_features=state_dim, out_features=self.hidden_dim
             )
             self.keys_mlp = nn.Linear(
-                in_features=hidden_dim, out_features=self.hidden_dim
+                in_features=state_dim, out_features=self.hidden_dim
             )
 
     def set_states(self, states):
@@ -95,13 +96,11 @@ class MultiHeadAttention(nn.Module):
             # self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
             self.query_transforms = nn.ModuleList(
                 [
-                    nn.Linear(
+                    (nn.Linear(
                         in_features=hidden_dim,
-                        out_features=(int(hidden_dim * 0.5))
-                        if (self.narrow & ts)
-                        else hidden_dim,
-                    )
-                    for ts in transform_states
+                        out_features=head.hidden_dim
+                    ) if ts else None)
+                    for (head, ts) in zip(self.attention_heads, self.transform_states)
                 ]
             )
 
