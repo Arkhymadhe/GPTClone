@@ -28,3 +28,18 @@ This project is an attempt to code up the following from scratch:
    c. GPT-3
    
    d. Chat-GPT
+
+## Structure
+
+The structure of the repo is as such.
+
+```text
+.
+├── README.MD
+├── main.py
+└── scripts
+    ├── architectures.py
+    ├── attention.py
+    ├── attentionV2.py
+    └── test.py
+
