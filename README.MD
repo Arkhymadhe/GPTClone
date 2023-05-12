@@ -31,7 +31,7 @@ This project is an attempt to code up the following from scratch:
 
 ## Structure
 
-The structure of the repo is as such.
+The structure of the repo is as such:
 
 ```text
 .
@@ -42,4 +42,4 @@ The structure of the repo is as such.
     ├── attention.py
     ├── attentionV2.py
     └── test.py
-
+```
