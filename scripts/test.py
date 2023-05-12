@@ -17,8 +17,8 @@ if __name__ == "__main__":
     query = torch.randn(size=(32, 10, 128))
 
     num_heads = 16
-    narrow = True
-    transform_states = True
+    narrow = False
+    transform_states = False
 
     if test == "encoder":
         print("Testing Encoder\n")
@@ -167,7 +167,7 @@ if __name__ == "__main__":
             summary(
                 transformer,
                 input_data=[x, query],
-                depth=6,
+                depth=2,
                 batch_dim=None,
                 device="cpu",
             )
