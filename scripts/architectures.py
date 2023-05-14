@@ -136,66 +136,6 @@ class EncoderDecoder(nn.Module):
         return torch.softmax(decoder_predictions, dim=-1).squeeze()
 
 
-class Transformer(nn.Module):
-    def __init__(
-        self,
-        num_encoder_embeddings=1024,
-        num_decoder_embeddings=1024,
-        num_encoder_blocks=4,
-        num_decoder_blocks=4,
-        states=None,
-        transform_states=False,
-        narrow=False,
-        hidden_dim=128,
-        num_heads=32,
-        decoder_only=False,
-    ):
-        super(Transformer, self).__init__()
-
-        self.decoder_only = decoder_only
-
-        if not self.decoder_only:
-            self.encoder = TransformerEncoder(
-                num_encoder_embeddings=num_encoder_embeddings,
-                states=states,
-                transform_states=transform_states,
-                narrow=narrow,
-                hidden_dim=hidden_dim,
-                num_heads=num_heads,
-                num_encoder_blocks=num_encoder_blocks,
-            )
-
-        self.decoder = TransformerDecoder(
-            num_decoder_embeddings=num_decoder_embeddings,
-            states=states,
-            transform_states=transform_states,
-            narrow=narrow,
-            hidden_dim=hidden_dim,
-            num_heads=num_heads,
-            num_decoder_blocks=num_decoder_blocks,
-        )
-
-        self.decoder_head = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 1.5)),
-            nn.ReLU(),
-            nn.Linear(
-                in_features=int(hidden_dim * 1.5), out_features=num_decoder_embeddings
-            ),
-        )
-
-    def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
-        if not self.decoder_only:
-            x_encoder = self.encoder(x_encoder, source_mask=source_mask)
-
-        x_decoder = self.decoder(
-            x_decoder, x_encoder, source_mask=source_mask, target_mask=target_mask
-        )
-
-        x_decoder = self.decoder_head(x_decoder)
-
-        return x_decoder
-
-
 class TransformerEncoderBlock(nn.Module):
     def __init__(
         self,
@@ -203,6 +143,7 @@ class TransformerEncoderBlock(nn.Module):
         transform_states=False,
         narrow=False,
         hidden_dim=128,
+        state_dim=128,
         num_heads=32,
     ):
         super().__init__()
@@ -212,6 +153,7 @@ class TransformerEncoderBlock(nn.Module):
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
+            state_dim=state_dim,
             num_heads=num_heads,
         )
         self.feed_forward = nn.Sequential(
@@ -238,6 +180,7 @@ class TransformerDecoderBlock(nn.Module):
         transform_states=False,
         narrow=False,
         hidden_dim=128,
+        state_dim=128,
         num_heads=32,
     ):
         super().__init__()
@@ -247,6 +190,7 @@ class TransformerDecoderBlock(nn.Module):
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
+            state_dim=state_dim,
             num_heads=num_heads,
         )
         self.masked_attention = MultiHeadAttention(
@@ -254,6 +198,7 @@ class TransformerDecoderBlock(nn.Module):
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
+            state_dim=state_dim,
             num_heads=num_heads,
         )
         self.feed_forward = nn.Sequential(
@@ -287,6 +232,7 @@ class TransformerEncoder(nn.Module):
         transform_states=False,
         narrow=False,
         hidden_dim=128,
+        state_dim=128,
         num_heads=32,
     ):
         super(TransformerEncoder, self).__init__()
@@ -300,6 +246,7 @@ class TransformerEncoder(nn.Module):
                 transform_states=transform_states,
                 narrow=narrow,
                 hidden_dim=hidden_dim,
+                state_dim=state_dim,
                 num_heads=num_heads,
             )
             for _ in range(num_encoder_blocks)
@@ -325,6 +272,7 @@ class TransformerDecoder(nn.Module):
         transform_states=False,
         narrow=False,
         hidden_dim=128,
+        state_dim=128,
         num_heads=32,
     ):
         super(TransformerDecoder, self).__init__()
@@ -338,6 +286,7 @@ class TransformerDecoder(nn.Module):
                 transform_states=transform_states,
                 narrow=narrow,
                 hidden_dim=hidden_dim,
+                state_dim=state_dim,
                 num_heads=num_heads,
             )
             for _ in range(num_decoder_blocks)
@@ -353,5 +302,68 @@ class TransformerDecoder(nn.Module):
             x_decoder = decoder_block(
                 x_decoder, x_encoder, source_mask=source_mask, target_mask=target_mask
             )
+
+        return x_decoder
+
+
+class Transformer(nn.Module):
+    def __init__(
+        self,
+        num_encoder_embeddings=1024,
+        num_decoder_embeddings=1024,
+        num_encoder_blocks=4,
+        num_decoder_blocks=4,
+        states=None,
+        transform_states=False,
+        narrow=False,
+        hidden_dim=128,
+        state_dim=128,
+        num_heads=32,
+        decoder_only=False,
+    ):
+        super(Transformer, self).__init__()
+
+        self.decoder_only = decoder_only
+
+        if not self.decoder_only:
+            self.encoder = TransformerEncoder(
+                num_encoder_embeddings=num_encoder_embeddings,
+                states=states,
+                transform_states=transform_states,
+                narrow=narrow,
+                hidden_dim=hidden_dim,
+                state_dim=state_dim,
+                num_heads=num_heads,
+                num_encoder_blocks=num_encoder_blocks,
+            )
+
+        self.decoder = TransformerDecoder(
+            num_decoder_embeddings=num_decoder_embeddings,
+            states=states,
+            transform_states=transform_states,
+            narrow=narrow,
+            hidden_dim=hidden_dim,
+            state_dim=state_dim,
+            num_heads=num_heads,
+            num_decoder_blocks=num_decoder_blocks,
+        )
+
+        self.decoder_head = nn.Sequential(
+            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 1.5)),
+            nn.ReLU(),
+            nn.Linear(
+                in_features=int(hidden_dim * 1.5), out_features=num_decoder_embeddings
+            ),
+        )
+
+    def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
+        if not self.decoder_only:
+            x_encoder = self.encoder(x_encoder, source_mask=source_mask)
+
+        x_decoder = self.decoder(
+            x_decoder, x_encoder, source_mask=source_mask, target_mask=target_mask
+        )
+
+        x_decoder = self.decoder_head(x_decoder)
 
         return x_decoder

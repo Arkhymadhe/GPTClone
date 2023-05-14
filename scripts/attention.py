@@ -3,7 +3,9 @@ from torch import nn
 
 
 class Attention(nn.Module):
-    def __init__(self, states=None, transform_states=False, state_dim=128, hidden_dim=128):
+    def __init__(
+        self, states=None, transform_states=False, state_dim=128, hidden_dim=128
+    ):
         super().__init__()
         self.states = states
         self.transform_states = transform_states
@@ -30,7 +32,7 @@ class Attention(nn.Module):
     def get_alignment_vectors(self, query):
         alignment_vectors = torch.bmm(query, self.transformed_keys.permute(0, 2, 1))
         alignment_vectors /= torch.sqrt(
-            torch.as_tensor(self.transformed_keys.size()[-1:])
+            torch.as_tensor(self.transformed_keys.size()[-1:]).to(device=query.device)
         )
         return alignment_vectors
 
@@ -59,11 +61,13 @@ class MultiHeadAttention(nn.Module):
         transform_states=False,
         narrow=False,
         hidden_dim=128,
+        state_dim=128,
         num_heads=32,
     ):
         super().__init__()
         self.num_heads = num_heads
         self.hidden_dim = hidden_dim
+        self.state_dim = state_dim
         self.attention_scores = None
         self.narrow = narrow
 
@@ -78,6 +82,7 @@ class MultiHeadAttention(nn.Module):
                 states=states,
                 transform_states=ts,
                 hidden_dim=int(hidden_dim * 0.5) if (self.narrow & ts) else hidden_dim,
+                state_dim=self.state_dim,
             )
             for ts in transform_states
         ]
@@ -95,10 +100,13 @@ class MultiHeadAttention(nn.Module):
             # self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
             self.query_transforms = nn.ModuleList(
                 [
-                    (nn.Linear(
-                        in_features=hidden_dim,
-                        out_features=head.hidden_dim
-                    ) if ts else None)
+                    (
+                        nn.Linear(
+                            in_features=head.state_dim, out_features=head.hidden_dim
+                        )
+                        if ts
+                        else None
+                    )
                     for (head, ts) in zip(self.attention_heads, self.transform_states)
                 ]
             )
