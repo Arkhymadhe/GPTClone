@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from attention import MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
-from gpt import GPT3
+from gpt import GPT
 
 from torchinfo import summary
 
@@ -222,7 +222,7 @@ def run_tests(test_to_run=None, device="cpu"):
             ),
         ).to(device)
 
-        gpt3 = GPT3(
+        gpt3 = GPT(
             transform_states=transform_states,
             num_heads=num_heads,
             num_decoder_blocks=num_heads,

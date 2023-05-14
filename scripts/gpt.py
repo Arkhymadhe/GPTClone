@@ -4,7 +4,7 @@ from torch import nn
 from architectures import Transformer, TokenEmbedder
 
 
-class GPT3(nn.Module):
+class GPT(nn.Module):
     def __init__(
         self,
         states=None,
