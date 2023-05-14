@@ -35,9 +35,18 @@ This project is an attempt to code up the following from scratch:
    
    c. GPT-3 (&#9989;)
 
-   d. GPT-3.5 (&#9989;)
+   d. GPT-3.5 (&#8987;)
    
    e. Chat-GPT (&#8987;)
+
+
+
+| Property                 | GPT-1       | GPT-2       | GPT-3       |
+|--------------------------|-------------|-------------|-------------|
+| Number of parameters     | 117 Million | 1.5 Billion | 175 Billion |
+| Number of decoder blocks | 12          | 48          | 96          |
+| Embedding dimension      | 768         | 1600        | 12288       |
+| Maximum token size       | 1024        | 2048        | 4096        |
 
 ### Repository Structure
 
@@ -92,3 +101,8 @@ The structure of the repo is as such:
 | &#9083;  | Placeholder in place; work in progress |
 | &#9888;  | Excluded file; present in `.gitignore` |
 | &#8987;  | Work in progress                       |
+
+### Note:
+
+1. All GPT versions will be implemented at a third of their cannon size. For instance, GPT-1 has 12 stacked decoder blocks in practice. Here, it will be implemented with 4 decoder blocks.
+

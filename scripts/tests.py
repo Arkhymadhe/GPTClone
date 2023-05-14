@@ -206,10 +206,10 @@ def run_tests(test_to_run=None, device="cpu"):
         print("`transform_states`: ", transform_states)
 
     elif test_to_run == "gpt3":
-        num_encoder_embeddings = 50257
+        num_encoder_embeddings = int(50257/3)
         narrow = False
-        num_heads = 32
-        embedding_dim = 128*5
+        num_heads = int(96/3)
+        embedding_dim = int(12288/3)
 
         x = torch.randint(
             low=0,
