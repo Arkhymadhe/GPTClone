@@ -73,6 +73,7 @@ The structure of the repo is as such:
 
 ***GPT-1***
 &#8987;
+
 ---
 ***GPT-2***
 &#8987;
@@ -81,14 +82,29 @@ The structure of the repo is as such:
 ***GPT-3***
 <a href="https://dugas.ch/artificial_curiosity/img/GPT_architecture/fullarch.png">![Full size](assets/gpt-arch.png)</a>
 **Image credit**: [Dugas' blog](https://dugas.ch/artificial_curiosity/GPT_architecture.html)
+
 ---
 
 ***GPT-3.5***
 &#8987;
+
 ---
 ***ChatGPT***
 &#8987;
+
 ---
+
+### Running tests
+
+---
+
+At present, tests can be run for the:
+1. Attention (and MultiHeadAttention) implementation
+2. Vanilla Encoder
+3. Vanilla Decoder
+4. Vanilla Encoder-Decoder
+5. Transformer
+6. GPT-3 (reduced version. See [Note](#note))
 
 ### Legend
 
