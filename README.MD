@@ -104,5 +104,5 @@ The structure of the repo is as such:
 
 ### Note:
 
-1. All GPT versions will be implemented at a third of their cannon size. For instance, GPT-1 has 12 stacked decoder blocks in practice. Here, it will be implemented with 4 decoder blocks.
+1. All GPT versions will be implemented at somewhere between a fifth to a tenth of their cannon size. For instance, GPT-3 has 96 stacked decoder blocks in practice. Here, it will be implemented with 9 decoder blocks.
 
