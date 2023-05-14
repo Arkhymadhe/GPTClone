@@ -103,6 +103,5 @@ The structure of the repo is as such:
 | &#8987;  | Work in progress                       |
 
 ### Note:
-
 1. All GPT versions will be implemented at somewhere between a fifth to a tenth of their cannon size (subject to changes). For instance, GPT-3 has 96 stacked decoder blocks in practice. Here, it will be implemented with 9 decoder blocks.
 
