@@ -99,12 +99,26 @@ The structure of the repo is as such:
 ---
 
 At present, tests can be run for the:
-1. Attention (and MultiHeadAttention) implementation
-2. Vanilla Encoder
-3. Vanilla Decoder
-4. Vanilla Encoder-Decoder
-5. Transformer
-6. GPT-3 (reduced version. See [Note](#note))
+1. Attention (and MultiHeadAttention) implementation (`attention`)
+2. Vanilla Encoder (`encoder`)
+3. Vanilla Decoder (`decoder`)
+4. Vanilla Encoder-Decoder (`encdec`)
+5. Transformer (`transformer`)
+6. GPT-3 (reduced version. See [Note](#note)) (`gpt3`)
+
+The tests can be run like so:
+
+```bash
+$ cd scripts
+$ python tests.py
+```
+
+Next, you provide the name of the test to run. For instance, to run all tests, provide `all`. Select device to run test on as eitehr `cpu` or `cuda`. If the test runs successfully, you should get something like:
+
+```text
+Test `test name` succeeded!
+```
+
 
 ### Legend
 
