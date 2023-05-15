@@ -29,11 +29,11 @@ This project is an attempt to code up the following from scratch:
 
 3. GPT family
 
-   a. GPT-1 (&#8987;)
+   a. GPT-1 (full version &#9989;)
    
    b. GPT-2 (&#8987;)
    
-   c. GPT-3 (&#9989;)
+   c. GPT-3 (reduced version &#9989;)
 
    d. GPT-3.5 (&#8987;)
    

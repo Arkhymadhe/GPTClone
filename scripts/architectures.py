@@ -240,6 +240,9 @@ class TransformerEncoder(nn.Module):
         self.encoder_embedding = TokenEmbedder(num_encoder_embeddings, hidden_dim)
         self.encoder_pos_embedding = TokenEmbedder(num_encoder_embeddings, hidden_dim)
 
+        for name, param in self.encoder_pos_embedding.named_parameters():
+            param.requires_grad = False
+
         self.encoder = [
             TransformerEncoderBlock(
                 states=states,
@@ -279,6 +282,9 @@ class TransformerDecoder(nn.Module):
 
         self.decoder_embedding = TokenEmbedder(num_decoder_embeddings, hidden_dim)
         self.decoder_pos_embedding = TokenEmbedder(num_decoder_embeddings, hidden_dim)
+
+        for name, param in self.decoder_pos_embedding.named_parameters():
+            param.requires_grad = False
 
         self.decoder = [
             TransformerDecoderBlock(

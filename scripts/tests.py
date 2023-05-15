@@ -14,6 +14,8 @@ tests = [
     "decoder",
     "encdec",
     "transformer",
+    "gpt1",
+    "gpt2",
     "gpt3",
 ]
 
@@ -23,6 +25,8 @@ test_names = [
     "Decoder architecture",
     "Encoder-Decoder architecture",
     "Transformer architecture",
+    "GPT-1 architecture",
+    "GPT-2 architecture",
     "GPT-3 architecture",
 ]
 
@@ -35,7 +39,7 @@ def run_tests(test_to_run=None, device="cpu"):
 
     num_heads = 16
     narrow = False
-    transform_states = False
+    transform_states = True
 
     if test_to_run == "encoder":
         print("Testing Encoder\n")
@@ -195,7 +199,7 @@ def run_tests(test_to_run=None, device="cpu"):
             summary(
                 transformer,
                 input_data=[x, query],
-                depth=2,
+                depth=4,
                 batch_dim=None,
                 device=device,
             )
@@ -205,11 +209,25 @@ def run_tests(test_to_run=None, device="cpu"):
         print("`decoder_only` : ", decoder_only)
         print("`transform_states`: ", transform_states)
 
-    elif test_to_run == "gpt3":
-        num_encoder_embeddings = int(50257/5)
-        narrow = False
-        num_heads = int(96/5)
-        embedding_dim = int(12288/5)
+    elif test_to_run in ["gpt1", "gpt2", "gpt3"]:
+        if test_to_run == "gpt1":
+            num_encoder_embeddings = 50257
+            narrow = False
+            num_heads = 12
+            num_blocks = 12
+            embedding_dim = 768
+        elif test_to_run == "gpt2":
+            num_encoder_embeddings = int(50257/5)
+            narrow = False
+            num_heads = 12
+            num_blocks = 48
+            embedding_dim = 1600
+        elif test_to_run == "gpt3":
+            num_encoder_embeddings = int(50257/5)
+            narrow = False
+            num_heads = 12
+            num_blocks = 96
+            embedding_dim = int(12288/5)
 
         torch.cuda.empty_cache()
 
@@ -225,7 +243,7 @@ def run_tests(test_to_run=None, device="cpu"):
         gpt3 = GPT(
             transform_states=transform_states,
             num_heads=num_heads,
-            num_decoder_blocks=num_heads,
+            num_decoder_blocks=num_blocks,
             embedding_dim=embedding_dim,
             num_embeddings=num_encoder_embeddings,
             narrow=narrow,
@@ -237,7 +255,7 @@ def run_tests(test_to_run=None, device="cpu"):
             summary(
                 gpt3,
                 input_data=x,
-                depth=2,
+                depth=4,
                 batch_dim=None,
                 device=device,
             )
