@@ -38,7 +38,7 @@ def run_tests(test_to_run=None, device="cpu"):
     query = torch.randn(size=(32, 10, 128)).to(device)
 
     num_heads = 16
-    narrow = False
+    narrow = True
     transform_states = True
 
     if test_to_run == "encoder":
@@ -212,19 +212,19 @@ def run_tests(test_to_run=None, device="cpu"):
     elif test_to_run in ["gpt1", "gpt2", "gpt3"]:
         if test_to_run == "gpt1":
             num_encoder_embeddings = 50257
-            narrow = False
+            narrow = True
             num_heads = 12
             num_blocks = 12
             embedding_dim = 768
         elif test_to_run == "gpt2":
             num_encoder_embeddings = int(50257/5)
-            narrow = False
+            narrow = True
             num_heads = 12
             num_blocks = 48
             embedding_dim = 1600
         elif test_to_run == "gpt3":
             num_encoder_embeddings = int(50257/5)
-            narrow = False
+            narrow = True
             num_heads = 12
             num_blocks = 96
             embedding_dim = int(12288/5)
@@ -253,7 +253,7 @@ def run_tests(test_to_run=None, device="cpu"):
 
         print(
             summary(
-                gpt3,
+                gpt3.decoder,
                 input_data=x,
                 depth=4,
                 batch_dim=None,
@@ -261,7 +261,10 @@ def run_tests(test_to_run=None, device="cpu"):
             )
         )
 
-        print("GPT-3 prediction shape: ", ans.shape)
+        gpt3.decoder.decoder[0].masked_attention.get_attention_scores()
+        print(gpt3.decoder.decoder[0].masked_attention.attention_scores)
+
+        print(f"{test_map[test_to_run].split(' ')[0]} prediction shape: ", ans.shape)
 
     return
 

@@ -36,7 +36,6 @@ class GPT(nn.Module):
 
         self.decoder = Transformer(
             states=self.states,
-            num_decoder_embeddings=self.num_embeddings,
             num_decoder_blocks=self.num_decoder_blocks,
             transform_states=self.transform_states,
             decoder_only=True,
@@ -46,9 +45,15 @@ class GPT(nn.Module):
             num_heads=self.num_heads,
         )
 
+        for name, param in self.pe_encoding.named_parameters():
+            param.requires_grad = False
+
+        for name, param in self.encoder.named_parameters():
+            param.requires_grad = False
+
     def forward(self, x, source_mask=None, target_mask=None):
         x_new = self.encoder(x) + self.pe_encoding(x)
 
-        x_new = self.decoder(x_new, x, source_mask=source_mask, target_mask=target_mask)
+        x_new = self.decoder(x_new, x_new, source_mask=source_mask, target_mask=target_mask)
 
         return torch.log_softmax(x_new, dim=-1)
