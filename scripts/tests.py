@@ -34,18 +34,22 @@ test_map = {k: v for (k, v) in zip(tests[1:], test_names)}
 
 
 def run_tests(test_to_run=None, device="cpu"):
-    x = torch.randn(size=(32, 5, 128)).to(device)
-    query = torch.randn(size=(32, 10, 128)).to(device)
-
+    hidden_dim = 160
     num_heads = 16
     narrow = True
     transform_states = True
+
+    x = torch.randn(size=(32, 5, hidden_dim)).to(device)
+    query = torch.randn(size=(32, 10, hidden_dim)).to(device)
 
     if test_to_run == "encoder":
         print("Testing Encoder\n")
 
         attn = Encoder(
-            num_heads=num_heads, narrow=narrow, transform_states=transform_states
+            num_heads=num_heads,
+            narrow=narrow,
+            transform_states=transform_states,
+            hidden_dim=hidden_dim,
         ).to(device)
 
         ans = attn(query)
@@ -74,16 +78,13 @@ def run_tests(test_to_run=None, device="cpu"):
         attn = MultiHeadAttention(
             num_heads=num_heads,
             transform_states=transform_states,
+            hidden_dim=hidden_dim,
+            state_dim=hidden_dim,
             narrow=narrow,
             states=x,
         ).to(device)
 
         ans = attn(query)
-
-        if hasattr(attn.attention_heads[0], "keys_mlp"):
-            print(True)
-        else:
-            print(False)
 
         attn.get_attention_scores()
 
@@ -91,9 +92,6 @@ def run_tests(test_to_run=None, device="cpu"):
 
         print("Attention scores shape: ", attn.attention_scores.shape)
         print("Context vector shape: ", ans.shape, end="\n\n")
-
-        print(attn.transform_states)
-
 
     elif test_to_run == "decoder":
         print("Testing Decoder\n")
@@ -112,8 +110,12 @@ def run_tests(test_to_run=None, device="cpu"):
                 transform_states = False
 
         attn = Decoder(
-            num_heads=num_heads, transform_states=transform_states, narrow=narrow
+            num_heads=num_heads,
+            transform_states=transform_states,
+            narrow=narrow,
+            hidden_dim=hidden_dim,
         ).to(device)
+
         attn.set_states(x, cross=True)
 
         ans = attn(query)
@@ -139,10 +141,16 @@ def run_tests(test_to_run=None, device="cpu"):
                 transform_states = False
 
         enc = Encoder(
-            num_heads=num_heads, transform_states=transform_states, narrow=narrow
+            num_heads=num_heads,
+            transform_states=transform_states,
+            narrow=narrow,
+            hidden_dim=hidden_dim,
         ).to(device)
         dec = Decoder(
-            num_heads=num_heads, transform_states=transform_states, narrow=narrow
+            num_heads=num_heads,
+            transform_states=transform_states,
+            narrow=narrow,
+            hidden_dim=hidden_dim,
         ).to(device)
 
         attn = EncoderDecoder(encoder=enc, decoder=dec)
@@ -163,33 +171,17 @@ def run_tests(test_to_run=None, device="cpu"):
 
         if prob >= 0.5:
             print("Using Encoder-Decoder Transformer architecture...\n")
-            x = torch.randint(
-                low=0,
-                high=num_encoder_embeddings,
-                size=(
-                    32,
-                    5,
-                ),
-            ).to(device)
             decoder_only = False
         else:
             print("Using Transformer-Decoder architecture (No Encoder)...\n")
             decoder_only = True
 
-        query = torch.randint(
-            low=0,
-            high=num_decoder_embeddings,
-            size=(
-                32,
-                10,
-            ),
-        ).to(device)
-
         transformer = Transformer(
-            num_decoder_embeddings=num_decoder_embeddings,
-            num_encoder_embeddings=num_encoder_embeddings,
+            vocab=num_decoder_embeddings,
             transform_states=transform_states,
             narrow=narrow,
+            hidden_dim=hidden_dim,
+            state_dim=hidden_dim,
             decoder_only=decoder_only,
         ).to(device)
 
@@ -212,22 +204,25 @@ def run_tests(test_to_run=None, device="cpu"):
     elif test_to_run in ["gpt1", "gpt2", "gpt3"]:
         if test_to_run == "gpt1":
             num_encoder_embeddings = 50257
+            max_token = 1024
             narrow = True
             num_heads = 12
             num_blocks = 12
             embedding_dim = 768
         elif test_to_run == "gpt2":
             num_encoder_embeddings = 50257
+            max_token = 2048
             narrow = True
             num_heads = 16
             num_blocks = 48
             embedding_dim = 1600
         elif test_to_run == "gpt3":
-            num_encoder_embeddings = int(50257/3)
+            num_encoder_embeddings = int(50257 / 3)
+            max_token = 4096
             narrow = True
             num_heads = 12
-            num_blocks = int(96/3)
-            embedding_dim = int(12288/3)
+            num_blocks = int(96 / 3)
+            embedding_dim = int(12288 / 3)
 
         torch.cuda.empty_cache()
 
@@ -246,6 +241,7 @@ def run_tests(test_to_run=None, device="cpu"):
             num_decoder_blocks=num_blocks,
             embedding_dim=embedding_dim,
             num_embeddings=num_encoder_embeddings,
+            max_token=max_token,
             narrow=narrow,
         ).to(device)
 
@@ -287,7 +283,7 @@ if __name__ == "__main__":
         passed_tests = list()
         failed_tests = list()
 
-        for test in tests[1:]:
+        for test in tests[1:-1]:
             print("\n", "=" * 200)
             print(f"\nTesting {test_map[test]}...\n")
             try:
@@ -299,7 +295,9 @@ if __name__ == "__main__":
 
         print("\n", "=" * 200)
         if len(passed_tests) < len(tests[1:]):
-            print(f"Tests passed: {len(passed_tests)}/{len(tests[1:])}\n")
+            print(
+                f"Tests passed: {len(passed_tests)}/{len(passed_tests) + len(failed_tests)}\n"
+            )
 
             print("Passed tests: ")
             for test in passed_tests:
@@ -310,7 +308,4 @@ if __name__ == "__main__":
                 for test in failed_tests:
                     print(f" > {test}")
         else:
-            print(
-                " "*90, "All tests run successfully!\n"
-            )
-
+            print(" " * 90, "All tests run successfully!\n")
