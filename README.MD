@@ -13,7 +13,7 @@ This project is an attempt to code up the following from scratch:
 
     b. Cross-attention (&#9989;)
 
-    c. Narrow attention (&#9083;, &#8987;)
+    c. Narrow attention (&#9989;)
 
     d. Wide attention (&#9989;)
     
@@ -31,7 +31,7 @@ This project is an attempt to code up the following from scratch:
 
    a. GPT-1 (full version &#9989;)
    
-   b. GPT-2 (&#8987;)
+   b. GPT-2 (full version &#9989;)
    
    c. GPT-3 (reduced version &#9989;)
 
@@ -57,13 +57,13 @@ The structure of the repo is as such:
 ```text
 .
 ├── README.MD
-├── main.py (&#9888;, &#8987;)
+├── main.py (⚠, ⌛)
 └── scripts
     ├── architectures.py
     ├── attention.py
     ├── attentionV2.py
     ├── gpt.py
-    ├── io.py (&#9888;, &#8987;)
+    ├── io.py (⚠, ⌛)
     └── tests.py
 ```
 
