@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from architectures import Transformer, TokenEmbedder, EmbeddingSystem
+from architectures import Transformer, EmbeddingSystem
 
 
 class GPT(nn.Module):
@@ -14,6 +14,7 @@ class GPT(nn.Module):
         embedding_dim=12288,
         num_decoder_blocks=96,
         narrow=True,
+        pre_ln=False,
         transform_states=True,
     ):
         super().__init__()
@@ -42,6 +43,7 @@ class GPT(nn.Module):
             hidden_dim=self.embedding_dim,
             state_dim=self.embedding_dim,
             num_heads=self.num_heads,
+            pre_ln=pre_ln
         )
 
     def forward(self, x, source_mask=None, target_mask=None):

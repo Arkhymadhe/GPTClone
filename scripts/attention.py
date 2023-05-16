@@ -31,13 +31,11 @@ class Attention(nn.Module):
 
     def get_alignment_vectors(self, query):
         alignment_vectors = torch.matmul(query, self.transformed_keys.transpose(-2, -1))
-        alignment_vectors /= torch.sqrt(
-            torch.as_tensor(self.transformed_keys.size()[-1:]).to(device=query.device)
-        )
+        alignment_vectors /= (self.transformed_keys.size(-1) ** .5)
+
         return alignment_vectors
 
     def forward(self, query, mask=None):
-        print(self.states.shape)
         self.transformed_keys = (
             self.keys_mlp(self.states) if self.transform_states else self.states
         )

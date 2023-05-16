@@ -38,9 +38,12 @@ def run_tests(test_to_run=None, device="cpu"):
     num_heads = 16
     narrow = True
     transform_states = True
+    pre_ln = False
 
     x = torch.randn(size=(32, 5, hidden_dim)).to(device)
     query = torch.randn(size=(32, 10, hidden_dim)).to(device)
+
+    torch.cuda.empty_cache()
 
     if test_to_run == "encoder":
         print("Testing Encoder\n")
@@ -183,6 +186,7 @@ def run_tests(test_to_run=None, device="cpu"):
             hidden_dim=hidden_dim,
             state_dim=hidden_dim,
             decoder_only=decoder_only,
+            pre_ln=pre_ln
         ).to(device)
 
         ans = transformer(x, query)
@@ -224,14 +228,12 @@ def run_tests(test_to_run=None, device="cpu"):
             num_blocks = int(96 / 3)
             embedding_dim = int(12288 / 3)
 
-        torch.cuda.empty_cache()
-
         x = torch.randint(
             low=0,
             high=num_encoder_embeddings,
             size=(
-                1,
-                1,
+                2,
+                10,
             ),
         ).to(device)
 
@@ -243,6 +245,7 @@ def run_tests(test_to_run=None, device="cpu"):
             num_embeddings=num_encoder_embeddings,
             max_token=max_token,
             narrow=narrow,
+            pre_ln=pre_ln
         ).to(device)
 
         ans = torch.sum(gpt3(x), dim=1)
@@ -251,7 +254,7 @@ def run_tests(test_to_run=None, device="cpu"):
             summary(
                 gpt3,
                 input_data=x,
-                depth=4,
+                depth=6,
                 batch_dim=None,
                 device=device,
             )

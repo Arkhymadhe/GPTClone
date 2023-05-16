@@ -179,8 +179,11 @@ class TransformerEncoderBlock(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
+        pre_ln=False
     ):
         super().__init__()
+
+        self.pre_ln = pre_ln
 
         self.attention = MultiHeadAttention(
             states=states,
@@ -204,9 +207,13 @@ class TransformerEncoderBlock(nn.Module):
 
     def forward(self, x, source_mask=None):
         self.attention.set_states(x)
-        x = self.layer_norm1(x + self.attention(x, mask=source_mask))
 
-        x = self.layer_norm2(x + self.feed_forward(x))
+        if self.pre_ln:
+            x = x + self.attention(self.layer_norm1(x), mask=source_mask)
+            x = x + self.feed_forward(self.layer_norm2(x))
+        else:
+            x = self.layer_norm1(x + self.attention(x, mask=source_mask))
+            x = self.layer_norm2(x + self.feed_forward(x))
 
         return x
 
@@ -220,8 +227,11 @@ class TransformerDecoderBlock(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
+        pre_ln=True
     ):
         super().__init__()
+
+        self.pre_ln = pre_ln
 
         self.attention = MultiHeadAttention(
             states=states,
@@ -256,11 +266,18 @@ class TransformerDecoderBlock(nn.Module):
         self.attention.set_states(encoder_states)
         self.masked_attention.set_states(x)
 
-        x = self.layer_norm1(x + self.masked_attention(x, mask=target_mask))
+        if self.pre_ln:
+            x = x + self.masked_attention(self.layer_norm1(x), mask=target_mask)
 
-        x = self.layer_norm2(x + self.attention(x, mask=source_mask))
+            x = x + self.attention(self.layer_norm2(x), mask=source_mask)
 
-        x = self.layer_norm3(x + self.feed_forward(x))
+            x = x + self.feed_forward(self.layer_norm3(x))
+        else:
+            x = self.layer_norm1(x + self.masked_attention(x, mask=target_mask))
+
+            x = self.layer_norm2(x + self.attention(x, mask=source_mask))
+
+            x = self.layer_norm3(x + self.feed_forward(x))
 
         return x
 
@@ -275,6 +292,7 @@ class TransformerEncoder(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
+        pre_ln=False
     ):
         super(TransformerEncoder, self).__init__()
 
@@ -286,6 +304,7 @@ class TransformerEncoder(nn.Module):
                 hidden_dim=hidden_dim,
                 state_dim=state_dim,
                 num_heads=num_heads,
+                pre_ln=pre_ln
             )
             for _ in range(num_encoder_blocks)
         ]
@@ -308,6 +327,7 @@ class TransformerDecoder(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
+        pre_ln=False
     ):
         super(TransformerDecoder, self).__init__()
 
@@ -319,6 +339,7 @@ class TransformerDecoder(nn.Module):
                 hidden_dim=hidden_dim,
                 state_dim=state_dim,
                 num_heads=num_heads,
+                pre_ln=pre_ln
             )
             for _ in range(num_decoder_blocks)
         ]
@@ -346,6 +367,7 @@ class Transformer(nn.Module):
         state_dim=128,
         num_heads=32,
         decoder_only=False,
+        pre_ln=False,
         vocab=50257,
     ):
         super(Transformer, self).__init__()
@@ -361,6 +383,7 @@ class Transformer(nn.Module):
                 state_dim=state_dim,
                 num_heads=num_heads,
                 num_encoder_blocks=num_encoder_blocks,
+                pre_ln=pre_ln
             )
 
         self.decoder = TransformerDecoder(
@@ -371,6 +394,7 @@ class Transformer(nn.Module):
             state_dim=state_dim,
             num_heads=num_heads,
             num_decoder_blocks=num_decoder_blocks,
+            pre_ln=pre_ln
         )
 
     def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
