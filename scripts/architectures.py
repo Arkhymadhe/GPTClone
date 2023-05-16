@@ -16,13 +16,23 @@ class TokenEmbedder(nn.Module):
 
 
 class EmbeddingSystem(nn.Module):
-    def __init__(self, num_text_embeddings=1024, text_embedding_dim=128, num_pos_embeddings=1024, pos_embedding_dim=128):
+    def __init__(
+        self,
+        num_text_embeddings=1024,
+        text_embedding_dim=128,
+        num_pos_embeddings=1024,
+        pos_embedding_dim=128,
+    ):
         super().__init__()
         self.encoder_embedding = TokenEmbedder(num_text_embeddings, text_embedding_dim)
-        self.encoder_pos_embedding = TokenEmbedder(num_pos_embeddings, pos_embedding_dim)
+        self.encoder_pos_embedding = TokenEmbedder(
+            num_pos_embeddings, pos_embedding_dim
+        )
 
     def forward(self, x):
-        x = self.encoder_embedding(x) + self.encoder_pos_embedding(torch.arange(0, x.shape[-1], 1).to(x.device))
+        x = self.encoder_embedding(x) + self.encoder_pos_embedding(
+            torch.arange(0, x.shape[-1], 1).to(x.device)
+        )
         return x
 
 
@@ -40,12 +50,17 @@ class Encoder(nn.Module):
             num_heads=num_heads,
             transform_states=transform_states,
             hidden_dim=hidden_dim,
+            state_dim=hidden_dim,
             narrow=narrow,
         )
         self.transform_vector = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 1.5)),
+            nn.Linear(
+                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=False
+            ),
             nn.LeakyReLU(negative_slope=0.2),
-            nn.Linear(in_features=int(hidden_dim * 1.5), out_features=hidden_dim),
+            nn.Linear(
+                in_features=int(hidden_dim * 1.5), out_features=hidden_dim, bias=False
+            ),
         )
         return
 
@@ -74,17 +89,25 @@ class Decoder(nn.Module):
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
+            state_dim=hidden_dim,
         )
         self.cross_attention = MultiHeadAttention(
             num_heads=num_heads,
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
+            state_dim=hidden_dim,
         )
         self.transform_vector = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 1.5)),
+            nn.Linear(
+                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=False
+            ),
             nn.LeakyReLU(negative_slope=0.2),
-            nn.LazyLinear(out_features=num_embeddings),
+            nn.Linear(
+                in_features=int(hidden_dim * 1.5),
+                out_features=num_embeddings,
+                bias=False,
+            ),
         )
         return
 
@@ -168,9 +191,13 @@ class TransformerEncoderBlock(nn.Module):
             num_heads=num_heads,
         )
         self.feed_forward = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 4)),
+            nn.Linear(
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+            ),
             nn.ReLU(),
-            nn.Linear(in_features=int(hidden_dim * 4), out_features=hidden_dim),
+            nn.Linear(
+                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=False
+            ),
         )
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
         self.layer_norm2 = nn.LayerNorm(hidden_dim)
@@ -213,9 +240,13 @@ class TransformerDecoderBlock(nn.Module):
             num_heads=num_heads,
         )
         self.feed_forward = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 4)),
+            nn.Linear(
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+            ),
             nn.ReLU(),
-            nn.Linear(in_features=int(hidden_dim * 4), out_features=hidden_dim),
+            nn.Linear(
+                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=False
+            ),
         )
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
         self.layer_norm2 = nn.LayerNorm(hidden_dim)
@@ -315,7 +346,7 @@ class Transformer(nn.Module):
         state_dim=128,
         num_heads=32,
         decoder_only=False,
-        vocab=50257
+        vocab=50257,
     ):
         super(Transformer, self).__init__()
 
@@ -357,11 +388,11 @@ class TransformerHead(nn.Module):
     def __init__(self, hidden_dim=128, vocab=50257):
         super(TransformerHead, self).__init__()
         self.decoder_head = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 4)),
-            nn.ReLU(),
             nn.Linear(
-                in_features=int(hidden_dim * 4), out_features=vocab
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
             ),
+            nn.ReLU(),
+            nn.Linear(in_features=int(hidden_dim * 4), out_features=vocab, bias=False),
         )
 
     def forward(self, x):

@@ -19,10 +19,10 @@ class Attention(nn.Module):
 
         if transform_states:
             self.values_mlp = nn.Linear(
-                in_features=state_dim, out_features=self.hidden_dim
+                in_features=state_dim, out_features=self.hidden_dim, bias=False
             )
             self.keys_mlp = nn.Linear(
-                in_features=state_dim, out_features=self.hidden_dim
+                in_features=state_dim, out_features=self.hidden_dim, bias=False
             )
 
     def set_states(self, states):
@@ -37,6 +37,7 @@ class Attention(nn.Module):
         return alignment_vectors
 
     def forward(self, query, mask=None):
+        print(self.states.shape)
         self.transformed_keys = (
             self.keys_mlp(self.states) if self.transform_states else self.states
         )
@@ -80,7 +81,7 @@ class MultiHeadAttention(nn.Module):
         self.transform_states = transform_states
 
         self.query_transform = nn.Linear(
-            in_features=self.state_dim, out_features=self.hidden_dim
+            in_features=self.state_dim, out_features=self.hidden_dim, bias=False
         )
 
         if not narrow:
@@ -89,7 +90,7 @@ class MultiHeadAttention(nn.Module):
                     states=states,
                     transform_states=ts,
                     hidden_dim=hidden_dim,
-                    state_dim=hidden_dim,
+                    state_dim=state_dim,
                 )
                 for ts in transform_states
             ]
@@ -99,28 +100,26 @@ class MultiHeadAttention(nn.Module):
             self.context_transform = nn.Linear(
                 in_features=sum([head.hidden_dim for head in self.attention_heads]),
                 out_features=self.hidden_dim,
+                bias=False,
             )
 
         else:
             # self.query_transform = nn.LazyLinear(out_features=int(hidden_dim * 0.5))
 
             self.attention_heads = Attention(
-                    states=states,
-                    transform_states=True,
-                    hidden_dim=int(hidden_dim/num_heads),
-                    state_dim=int(hidden_dim/num_heads),
-                )
+                states=states,
+                transform_states=True,
+                hidden_dim=int(hidden_dim / num_heads),
+                state_dim=int(hidden_dim / num_heads),
+            )
 
             self.context_transform = nn.Linear(
-                in_features=self.hidden_dim,
-                out_features=self.hidden_dim,
+                in_features=self.hidden_dim, out_features=self.hidden_dim, bias=False
             )
 
     def set_states(self, states):
         if self.narrow:
-            self.attention_heads.set_states(
-                self.get_dims_per_head(states)
-            )
+            self.attention_heads.set_states(self.get_dims_per_head(states))
         else:
             for head in self.attention_heads:
                 head.set_states(states)
@@ -128,14 +127,17 @@ class MultiHeadAttention(nn.Module):
         return
 
     def get_attention_scores(self):
-        self.attention_scores = torch.stack(
-            [head.attention_scores for head in self.attention_heads], dim=1
-        )
+        if not self.narrow:
+            self.attention_scores = torch.stack(
+                [head.attention_scores for head in self.attention_heads], dim=1
+            )
+            return
+        self.attention_scores = self.attention_heads.attention_scores
         return
 
     def get_dims_per_head(self, x):
         N, L, H = x.shape
-        x = x.view(N, L, self.num_heads, int(H/self.num_heads))
+        x = x.view(N, L, self.num_heads, int(H / self.num_heads))
         return x.transpose(1, 2)
 
     def forward(self, query, mask=None):
@@ -143,12 +145,17 @@ class MultiHeadAttention(nn.Module):
         # context_vectors = [head(query, mask=mask) for head in self.attention_heads]
 
         if self.narrow:
-            query = self.get_dims_per_head(
-                self.query_transform(query)
-            )
+            query = self.get_dims_per_head(self.query_transform(query))
+
+            if len(self.attention_heads.states.shape) != 4:
+                self.attention_heads.set_states(
+                    self.get_dims_per_head(self.attention_heads.states)
+                )
 
             N, n, L, h = query.shape
-            context_vectors = self.attention_heads(query, mask=mask).view(N, L, n*h).contiguous()
+            context_vectors = (
+                self.attention_heads(query, mask=mask).view(N, L, n * h).contiguous()
+            )
         else:
             queries = [query] * self.num_heads
 
