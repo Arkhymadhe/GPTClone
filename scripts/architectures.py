@@ -16,12 +16,13 @@ class TokenEmbedder(nn.Module):
 
 
 class EmbeddingSystem(nn.Module):
-    def _init__(self, num_text_embeddings=1024, text_embedding_dim=128, num_pos_embeddings=1024, pos_embedding_dim=128):
+    def __init__(self, num_text_embeddings=1024, text_embedding_dim=128, num_pos_embeddings=1024, pos_embedding_dim=128):
+        super().__init__()
         self.encoder_embedding = TokenEmbedder(num_text_embeddings, text_embedding_dim)
         self.encoder_pos_embedding = TokenEmbedder(num_pos_embeddings, pos_embedding_dim)
 
     def forward(self, x):
-        x = self.encoder_embedding(x) + self.encoder_pos_embedding(x)
+        x = self.encoder_embedding(x) + self.encoder_pos_embedding(torch.arange(0, x.shape[-1], 1).to(x.device))
         return x
 
 
@@ -195,6 +196,14 @@ class TransformerDecoderBlock(nn.Module):
     ):
         super().__init__()
 
+        self.attention = MultiHeadAttention(
+            states=states,
+            transform_states=transform_states,
+            narrow=narrow,
+            hidden_dim=hidden_dim,
+            state_dim=state_dim,
+            num_heads=num_heads,
+        )
         self.masked_attention = MultiHeadAttention(
             states=states,
             transform_states=transform_states,
@@ -209,16 +218,16 @@ class TransformerDecoderBlock(nn.Module):
             nn.Linear(in_features=int(hidden_dim * 4), out_features=hidden_dim),
         )
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
-        #self.layer_norm2 = nn.LayerNorm(hidden_dim)
+        self.layer_norm2 = nn.LayerNorm(hidden_dim)
         self.layer_norm3 = nn.LayerNorm(hidden_dim)
 
     def forward(self, x, encoder_states, source_mask=None, target_mask=None):
-        #self.attention.set_states(encoder_states)
+        self.attention.set_states(encoder_states)
         self.masked_attention.set_states(x)
 
         x = self.layer_norm1(x + self.masked_attention(x, mask=target_mask))
 
-        #x = self.layer_norm2(x + self.attention(x, mask=source_mask))
+        x = self.layer_norm2(x + self.attention(x, mask=source_mask))
 
         x = self.layer_norm3(x + self.feed_forward(x))
 
@@ -333,14 +342,6 @@ class Transformer(nn.Module):
             num_decoder_blocks=num_decoder_blocks,
         )
 
-        self.decoder_head = nn.Sequential(
-            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 4)),
-            nn.ReLU(),
-            nn.Linear(
-                in_features=int(hidden_dim * 4), out_features=vocab
-            ),
-        )
-
     def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
         if not self.decoder_only:
             x_encoder = self.encoder(x_encoder, source_mask=source_mask)
@@ -349,6 +350,20 @@ class Transformer(nn.Module):
             x_decoder, x_encoder, source_mask=source_mask, target_mask=target_mask
         )
 
-        x_decoder = self.decoder_head(x_decoder)
-
         return x_decoder
+
+
+class TransformerHead(nn.Module):
+    def __init__(self, hidden_dim=128, vocab=50257):
+        super(TransformerHead, self).__init__()
+        self.decoder_head = nn.Sequential(
+            nn.Linear(in_features=hidden_dim, out_features=int(hidden_dim * 4)),
+            nn.ReLU(),
+            nn.Linear(
+                in_features=int(hidden_dim * 4), out_features=vocab
+            ),
+        )
+
+    def forward(self, x):
+        x = self.decoder_head(x)
+        return x

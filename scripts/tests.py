@@ -217,17 +217,17 @@ def run_tests(test_to_run=None, device="cpu"):
             num_blocks = 12
             embedding_dim = 768
         elif test_to_run == "gpt2":
-            num_encoder_embeddings = int(50257/5)
+            num_encoder_embeddings = 50257
             narrow = True
-            num_heads = 12
+            num_heads = 16
             num_blocks = 48
             embedding_dim = 1600
         elif test_to_run == "gpt3":
-            num_encoder_embeddings = int(50257/5)
+            num_encoder_embeddings = int(50257/3)
             narrow = True
             num_heads = 12
-            num_blocks = 96
-            embedding_dim = int(12288/5)
+            num_blocks = int(96/3)
+            embedding_dim = int(12288/3)
 
         torch.cuda.empty_cache()
 
@@ -253,16 +253,13 @@ def run_tests(test_to_run=None, device="cpu"):
 
         print(
             summary(
-                gpt3.decoder,
+                gpt3,
                 input_data=x,
                 depth=4,
                 batch_dim=None,
                 device=device,
             )
         )
-
-        gpt3.decoder.decoder[0].masked_attention.get_attention_scores()
-        print(gpt3.decoder.decoder[0].masked_attention.attention_scores)
 
         print(f"{test_map[test_to_run].split(' ')[0]} prediction shape: ", ans.shape)
 
@@ -285,11 +282,7 @@ if __name__ == "__main__":
     device = torch.device(device)
 
     if test != "all":
-        try:
-            run_tests(test_to_run=test, device=device)
-            print(f"\nTest `{test}` succeeded!")
-        except:
-            print(f"\nTest `{test}` failed.")
+        run_tests(test_to_run=test, device=device)
     else:
         passed_tests = list()
         failed_tests = list()

@@ -149,7 +149,6 @@ class MultiHeadAttention(nn.Module):
 
             N, n, L, h = query.shape
             context_vectors = self.attention_heads(query, mask=mask).view(N, L, n*h).contiguous()
-            print(context_vectors.shape)
         else:
             queries = [query] * self.num_heads
 
