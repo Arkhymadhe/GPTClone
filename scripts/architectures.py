@@ -227,20 +227,26 @@ class TransformerDecoderBlock(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
-        pre_ln=True
+        pre_ln=True,
+        ablate=True,
     ):
         super().__init__()
 
         self.pre_ln = pre_ln
 
-        self.attention = MultiHeadAttention(
-            states=states,
-            transform_states=transform_states,
-            narrow=narrow,
-            hidden_dim=hidden_dim,
-            state_dim=state_dim,
-            num_heads=num_heads,
-        )
+        self.ablate = ablate
+
+        if not ablate:
+            self.cross_attention = MultiHeadAttention(
+                states=states,
+                transform_states=transform_states,
+                narrow=narrow,
+                hidden_dim=hidden_dim,
+                state_dim=state_dim,
+                num_heads=num_heads,
+            )
+            self.layer_norm2 = nn.LayerNorm(hidden_dim)
+
         self.masked_attention = MultiHeadAttention(
             states=states,
             transform_states=transform_states,
@@ -258,24 +264,28 @@ class TransformerDecoderBlock(nn.Module):
                 in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=False
             ),
         )
+
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
-        self.layer_norm2 = nn.LayerNorm(hidden_dim)
         self.layer_norm3 = nn.LayerNorm(hidden_dim)
 
     def forward(self, x, encoder_states, source_mask=None, target_mask=None):
-        self.attention.set_states(encoder_states)
         self.masked_attention.set_states(x)
+
+        if not self.ablate:
+            self.cross_attention.set_states(encoder_states)
 
         if self.pre_ln:
             x = x + self.masked_attention(self.layer_norm1(x), mask=target_mask)
 
-            x = x + self.attention(self.layer_norm2(x), mask=source_mask)
+            if not self.ablate:
+                x = x + self.cross_attention(self.layer_norm2(x), mask=source_mask)
 
             x = x + self.feed_forward(self.layer_norm3(x))
         else:
             x = self.layer_norm1(x + self.masked_attention(x, mask=target_mask))
 
-            x = self.layer_norm2(x + self.attention(x, mask=source_mask))
+            if not self.ablate:
+                x = self.layer_norm2(x + self.cross_attention(x, mask=source_mask))
 
             x = self.layer_norm3(x + self.feed_forward(x))
 
@@ -327,6 +337,7 @@ class TransformerDecoder(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
+        ablate=True,
         pre_ln=False
     ):
         super(TransformerDecoder, self).__init__()
@@ -339,6 +350,7 @@ class TransformerDecoder(nn.Module):
                 hidden_dim=hidden_dim,
                 state_dim=state_dim,
                 num_heads=num_heads,
+                ablate=ablate,
                 pre_ln=pre_ln
             )
             for _ in range(num_decoder_blocks)
@@ -367,6 +379,7 @@ class Transformer(nn.Module):
         state_dim=128,
         num_heads=32,
         decoder_only=False,
+        ablate=True,
         pre_ln=False,
         vocab=50257,
     ):
@@ -394,6 +407,7 @@ class Transformer(nn.Module):
             state_dim=state_dim,
             num_heads=num_heads,
             num_decoder_blocks=num_decoder_blocks,
+            ablate=ablate,
             pre_ln=pre_ln
         )
 

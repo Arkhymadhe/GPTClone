@@ -16,6 +16,7 @@ class GPT(nn.Module):
         narrow=True,
         pre_ln=False,
         transform_states=True,
+        ablate=True
     ):
         super().__init__()
 
@@ -43,6 +44,7 @@ class GPT(nn.Module):
             hidden_dim=self.embedding_dim,
             state_dim=self.embedding_dim,
             num_heads=self.num_heads,
+            ablate=ablate,
             pre_ln=pre_ln
         )
 

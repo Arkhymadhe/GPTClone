@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from attention import MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
-from gpt import GPT
+from llms import GPT
 
 from torchinfo import summary
 
@@ -39,6 +39,7 @@ def run_tests(test_to_run=None, device="cpu"):
     narrow = True
     transform_states = True
     pre_ln = False
+    ablate=True
 
     x = torch.randn(size=(32, 5, hidden_dim)).to(device)
     query = torch.randn(size=(32, 10, hidden_dim)).to(device)
@@ -245,6 +246,7 @@ def run_tests(test_to_run=None, device="cpu"):
             num_embeddings=num_encoder_embeddings,
             max_token=max_token,
             narrow=narrow,
+            ablate=ablate,
             pre_ln=pre_ln
         ).to(device)
 
