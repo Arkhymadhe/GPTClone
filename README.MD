@@ -39,6 +39,8 @@ This project is an attempt to code up the following from scratch:
    
    e. Chat-GPT (&#8987;)
 
+4. BLOOM
+
 
 
 | Property                 | GPT-1       | GPT-2       | GPT-3       |
@@ -93,7 +95,10 @@ The structure of the repo is as such:
 &#8987;
 
 ---
+***BLOOM***
+&#9989;
 
+---
 ### Running tests
 
 ---
@@ -106,7 +111,8 @@ At present, tests can be run for the:
 5. Transformer (`transformer`)
 6. GPT-1 (`gpt1`)
 7. GPT-2 (`gpt2`)
-6. GPT-3 (reduced version. See [Note](#note)) (`gpt3`)
+8. GPT-3 (reduced version. See [Note](#note)) (`gpt3`)
+9. BLOOM (reduced version) (`bloom`)
 
 The tests can be run like so:
 
@@ -135,5 +141,5 @@ Test `test name` succeeded!
 | &#8987;  | Work in progress                       |
 
 ### Note:
-1. All GPT versions will be implemented at somewhere between a fifth to a tenth of their cannon size (subject to changes). For instance, GPT-3 has 96 stacked decoder blocks in practice. Here, it will be implemented with 9 decoder blocks.
+1.  GPT-3 and BLOOM versions will be implemented at somewhere between a fifth to a tenth of their cannon size (subject to changes). For instance, GPT-3 has 96 stacked decoder blocks in practice. Here, it will be implemented with 9 decoder blocks.
 
