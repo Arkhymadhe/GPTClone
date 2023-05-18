@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from attention import MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
-from llms import GPT
+from llms import GPT, BLOOM
 
 from torchinfo import summary
 
@@ -17,6 +17,7 @@ tests = [
     "gpt1",
     "gpt2",
     "gpt3",
+    "bloom"
 ]
 
 test_names = [
@@ -28,6 +29,7 @@ test_names = [
     "GPT-1 architecture",
     "GPT-2 architecture",
     "GPT-3 architecture",
+    "BLOOM architecture"
 ]
 
 test_map = {k: v for (k, v) in zip(tests[1:], test_names)}
@@ -35,10 +37,10 @@ test_map = {k: v for (k, v) in zip(tests[1:], test_names)}
 
 def run_tests(test_to_run=None, device="cpu"):
     hidden_dim = 160
-    num_heads = 16
+    num_heads = 5
     narrow = True
     transform_states = True
-    pre_ln = False
+    pre_ln = True
     ablate=True
 
     x = torch.randn(size=(32, 5, hidden_dim)).to(device)
@@ -206,7 +208,8 @@ def run_tests(test_to_run=None, device="cpu"):
         print("`decoder_only` : ", decoder_only)
         print("`transform_states`: ", transform_states)
 
-    elif test_to_run in ["gpt1", "gpt2", "gpt3"]:
+    elif test_to_run in ["gpt1", "gpt2", "gpt3", "bloom"]:
+        model = GPT
         if test_to_run == "gpt1":
             num_encoder_embeddings = 50257
             max_token = 1024
@@ -228,6 +231,14 @@ def run_tests(test_to_run=None, device="cpu"):
             num_heads = 12
             num_blocks = int(96 / 3)
             embedding_dim = int(12288 / 3)
+        elif test_to_run == "bloom":
+            num_encoder_embeddings = 50257
+            max_token = 2048
+            narrow = True
+            num_heads = 16
+            num_blocks = 48
+            embedding_dim = 1600
+            model = BLOOM
 
         x = torch.randint(
             low=0,
@@ -238,7 +249,7 @@ def run_tests(test_to_run=None, device="cpu"):
             ),
         ).to(device)
 
-        gpt3 = GPT(
+        gpt3 = model(
             transform_states=transform_states,
             num_heads=num_heads,
             num_decoder_blocks=num_blocks,
@@ -288,18 +299,22 @@ if __name__ == "__main__":
         passed_tests = list()
         failed_tests = list()
 
-        for test in tests[1:-1]:
+        for test in tests[1:]:
+            if test == "gpt3":
+                continue
             print("\n", "=" * 200)
             print(f"\nTesting {test_map[test]}...\n")
             try:
                 run_tests(test_to_run=test, device=device)
                 passed_tests.append(test)
+                torch.cuda.empty_cache()
             except:
                 failed_tests.append(test)
+                torch.cuda.empty_cache()
                 continue
 
         print("\n", "=" * 200)
-        if len(passed_tests) < len(tests[1:]):
+        if bool(failed_tests):
             print(
                 f"Tests passed: {len(passed_tests)}/{len(passed_tests) + len(failed_tests)}\n"
             )
