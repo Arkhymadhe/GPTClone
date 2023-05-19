@@ -205,15 +205,18 @@ class TransformerEncoderBlock(nn.Module):
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
         self.layer_norm2 = nn.LayerNorm(hidden_dim)
 
+        self.dropout1 = nn.Dropout(.5)
+        self.dropout2 = nn.Dropout(.5)
+
     def forward(self, x, source_mask=None):
         self.attention.set_states(x)
 
         if self.pre_ln:
-            x = x + self.attention(self.layer_norm1(x), mask=source_mask)
-            x = x + self.feed_forward(self.layer_norm2(x))
+            x = x + self.dropout1(self.attention(self.layer_norm1(x), mask=source_mask))
+            x = x + self.dropout2(self.feed_forward(self.layer_norm2(x)))
         else:
-            x = self.layer_norm1(x + self.attention(x, mask=source_mask))
-            x = self.layer_norm2(x + self.feed_forward(x))
+            x = self.layer_norm1(x + self.dropout1(self.attention(x, mask=source_mask)))
+            x = self.layer_norm2(x + self.dropout2(self.feed_forward(x)))
 
         return x
 
@@ -246,6 +249,7 @@ class TransformerDecoderBlock(nn.Module):
                 num_heads=num_heads,
             )
             self.layer_norm2 = nn.LayerNorm(hidden_dim)
+            self.dropout2 = nn.Dropout(0.5)
 
         self.masked_attention = MultiHeadAttention(
             states=states,
@@ -268,6 +272,9 @@ class TransformerDecoderBlock(nn.Module):
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
         self.layer_norm3 = nn.LayerNorm(hidden_dim)
 
+        self.dropout1 = nn.Dropout(0.5)
+        self.dropout3 = nn.Dropout(0.5)
+
     def forward(self, x, encoder_states, source_mask=None, target_mask=None):
         self.masked_attention.set_states(x)
 
@@ -275,19 +282,19 @@ class TransformerDecoderBlock(nn.Module):
             self.cross_attention.set_states(encoder_states)
 
         if self.pre_ln:
-            x = x + self.masked_attention(self.layer_norm1(x), mask=target_mask)
+            x = x + self.dropout1(self.masked_attention(self.layer_norm1(x), mask=target_mask))
 
             if not self.ablate:
-                x = x + self.cross_attention(self.layer_norm2(x), mask=source_mask)
+                x = x + self.dropout2(self.cross_attention(self.layer_norm2(x), mask=source_mask))
 
-            x = x + self.feed_forward(self.layer_norm3(x))
+            x = x + self.dropout3(self.feed_forward(self.layer_norm3(x)))
         else:
-            x = self.layer_norm1(x + self.masked_attention(x, mask=target_mask))
+            x = self.layer_norm1(x + self.dropout1(self.masked_attention(x, mask=target_mask)))
 
             if not self.ablate:
-                x = self.layer_norm2(x + self.cross_attention(x, mask=source_mask))
+                x = self.layer_norm2(x + self.dropout2(self.cross_attention(x, mask=source_mask)))
 
-            x = self.layer_norm3(x + self.feed_forward(x))
+            x = self.layer_norm3(x + self.dropout3(self.feed_forward(x)))
 
         return x
 

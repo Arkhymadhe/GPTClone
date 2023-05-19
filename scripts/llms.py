@@ -18,7 +18,7 @@ class GPT(nn.Module):
         transform_states=True,
         ablate=True
     ):
-        super().__init__()
+        super(GPT, self).__init__()
 
         self.embedding_dim = embedding_dim
         self.num_embeddings = num_embeddings
