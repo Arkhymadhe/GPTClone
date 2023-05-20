@@ -60,12 +60,15 @@ The structure of the repo is as such:
 .
 ├── README.MD
 ├── main.py (⚠, ⌛)
+├── assets
+│   └── gpt-arch.png
+├── data
+│   └── io.py (⚠, ⌛)
+├── main.py
 └── scripts
     ├── architectures.py
     ├── attention.py
-    ├── attentionV2.py
-    ├── gpt.py
-    ├── io.py (⚠, ⌛)
+    ├── llms.py (formerly gpt.py)
     └── tests.py
 ```
 
