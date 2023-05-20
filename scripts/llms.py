@@ -58,6 +58,22 @@ class GPT(nn.Module):
         return torch.log_softmax(x_new, dim=-1)
 
 
+class GPTHead(nn.Module):
+    def __init__(self, hidden_dim=128, vocab=50257):
+        super(GPTHead, self).__init__()
+        self.decoder_head = nn.Sequential(
+            nn.Linear(
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+            ),
+            nn.ReLU(),
+            nn.Linear(in_features=int(hidden_dim * 4), out_features=vocab, bias=False),
+        )
+
+    def forward(self, x):
+        x = self.decoder_head(x)
+        return x
+
+
 class BLOOM(nn.Module):
     def __init__(self,
         states=None,
@@ -111,4 +127,12 @@ class BLOOM(nn.Module):
         #x_new = self.output_embedding_system(x_new)
 
         return x_new
+
+
+class BLOOMHead(nn.Module):
+    def __init__(self):
+        super(BLOOMHead, self).__init__()
+        raise NotImplementedError
+    def forward(self, x):
+        raise NotImplementedError
 
