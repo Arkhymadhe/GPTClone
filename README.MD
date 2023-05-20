@@ -39,7 +39,12 @@ This project is an attempt to code up the following from scratch:
    
    e. Chat-GPT (&#8987;)
 
+
 4. BLOOM
+
+   a. ALIBI mask (&#8987;)
+
+   b. Architecture  (&#9989;)
 
 
 
@@ -77,16 +82,19 @@ The structure of the repo is as such:
 ---
 
 ***GPT-1***
-&#8987;
+&#9989;
 
 ---
 ***GPT-2***
-&#8987;
+&#9989;
 
 ---
 ***GPT-3***
+
+Reduced version &#9989;
+
 <a href="https://dugas.ch/artificial_curiosity/img/GPT_architecture/fullarch.png">![Full size](assets/gpt-arch.png)</a>
-**Image credit**: [Dugas' blog](https://dugas.ch/artificial_curiosity/GPT_architecture.html)
+<p align="center">Image Credit: <a href="https://dugas.ch/artificial_curiosity/GPT_architecture.html">Dugas' blog</a></p>
 
 ---
 
@@ -99,7 +107,11 @@ The structure of the repo is as such:
 
 ---
 ***BLOOM***
-&#9989;
+
+Reduced version &#9989;
+
+![Image](assets/BLOOM.png)
+<p align="center">BLOOM architectural design</p>
 
 ---
 ### Running tests
