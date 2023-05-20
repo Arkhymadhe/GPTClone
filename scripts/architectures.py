@@ -388,7 +388,6 @@ class Transformer(nn.Module):
         decoder_only=False,
         ablate=True,
         pre_ln=False,
-        vocab=50257,
     ):
         super(Transformer, self).__init__()
 
@@ -428,18 +427,3 @@ class Transformer(nn.Module):
 
         return x_decoder
 
-
-class TransformerHead(nn.Module):
-    def __init__(self, hidden_dim=128, vocab=50257):
-        super(TransformerHead, self).__init__()
-        self.decoder_head = nn.Sequential(
-            nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
-            ),
-            nn.ReLU(),
-            nn.Linear(in_features=int(hidden_dim * 4), out_features=vocab, bias=False),
-        )
-
-    def forward(self, x):
-        x = self.decoder_head(x)
-        return x
