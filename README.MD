@@ -110,6 +110,8 @@ Reduced version &#9989;
 
 Reduced version &#9989;
 
+ALiBi mask &#8987;
+
 ![Image](assets/BLOOM.png)
 <p align="center">BLOOM architectural design</p>
 
