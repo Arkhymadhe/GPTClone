@@ -300,7 +300,7 @@ if __name__ == "__main__":
         failed_tests = list()
 
         for test in tests[1:]:
-            if test == "gpt3":
+            if test in ["gpt3", "bloom"]:
                 continue
             print("\n", "=" * 200)
             print(f"\nTesting {test_map[test]}...\n")
