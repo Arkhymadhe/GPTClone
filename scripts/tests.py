@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from attention import MultiHeadAttention
 from architectures import Decoder, Encoder, EncoderDecoder, Transformer
-from llms import GPT, BLOOM
+from llms import GPT, BLOOM, ALIBI
 
 from torchinfo import summary
 
@@ -14,6 +14,7 @@ tests = [
     "decoder",
     "encdec",
     "transformer",
+    "alibi",
     "gpt1",
     "gpt2",
     "gpt3",
@@ -26,6 +27,7 @@ test_names = [
     "Decoder architecture",
     "Encoder-Decoder architecture",
     "Transformer architecture",
+    "ALiBi encoding",
     "GPT-1 architecture",
     "GPT-2 architecture",
     "GPT-3 architecture",
@@ -43,8 +45,11 @@ def run_tests(test_to_run=None, device="cpu"):
     pre_ln = True
     ablate=True
 
-    x = torch.randn(size=(32, 5, hidden_dim)).to(device)
-    query = torch.randn(size=(32, 10, hidden_dim)).to(device)
+    target_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
+    source_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
+
+    x = torch.randn(size=(32, source_seq_len, hidden_dim)).to(device)
+    query = torch.randn(size=(32, target_seq_len, hidden_dim)).to(device)
 
     torch.cuda.empty_cache()
 
@@ -90,13 +95,20 @@ def run_tests(test_to_run=None, device="cpu"):
             states=x,
         ).to(device)
 
-        ans = attn(query)
+        if prob >= 0.5:
+            kind = "cross"
+            INPUT = query
+        else:
+            kind = "self"
+            INPUT = x
+
+        ans = attn(INPUT)
 
         attn.get_attention_scores()
 
-        print(summary(attn, input_data=query, device=device))
+        print(summary(attn, input_data=INPUT, device=device))
 
-        print("Attention scores shape: ", attn.attention_scores.shape)
+        print(f"{kind.capitalize()}-attention scores shape: ", attn.attention_scores.shape)
         print("Context vector shape: ", ans.shape, end="\n\n")
 
     elif test_to_run == "decoder":
@@ -170,9 +182,6 @@ def run_tests(test_to_run=None, device="cpu"):
         print("Decoder prediction shape: ", ans.shape, end="\n\n")
 
     elif test_to_run == "transformer":
-        num_encoder_embeddings = 12
-        num_decoder_embeddings = 200
-
         prob = torch.randn(size=(1,))
 
         if prob >= 0.5:
@@ -244,7 +253,7 @@ def run_tests(test_to_run=None, device="cpu"):
             high=num_encoder_embeddings,
             size=(
                 2,
-                10,
+                source_seq_len,
             ),
         ).to(device)
 
@@ -274,6 +283,16 @@ def run_tests(test_to_run=None, device="cpu"):
 
         print(f"{test_map[test_to_run].split(' ')[0]} prediction shape: ", ans.shape)
 
+    elif test_to_run == "alibi":
+        attention_scores = torch.randn(size=(32, num_heads, target_seq_len, target_seq_len))
+        alibi = ALIBI(
+            num_heads=num_heads,
+            seq_len=target_seq_len,
+        )
+
+        print("Input shape: ", attention_scores.shape)
+        print("ALiBi output shape: ", alibi(attention_scores).shape)
+
     return
 
 
@@ -282,7 +301,7 @@ if __name__ == "__main__":
 
     while test not in tests:
         test = input(
-            "Option provided must be in [`all`, `attention`, `encoder`, `decoder`, `encdec`, `transformer`, `gpt3`]:  "
+            "Option provided must be in [`all`, `attention`, `encoder`, `decoder`, `encdec`, `transformer`, `alibi`, `gpt1`, `gpt2`, `gpt3`]:  "
         ).lower()
 
     device = input("\nWhich device to run on: ").lower()
