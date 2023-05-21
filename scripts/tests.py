@@ -183,7 +183,6 @@ def run_tests(test_to_run=None, device="cpu"):
             decoder_only = True
 
         transformer = Transformer(
-            vocab=num_decoder_embeddings,
             transform_states=transform_states,
             narrow=narrow,
             hidden_dim=hidden_dim,
