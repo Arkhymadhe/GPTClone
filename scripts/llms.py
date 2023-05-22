@@ -139,7 +139,7 @@ class BLOOMHead(nn.Module):
 
 
 class ALIBI(nn.Module):
-    def __init__(self, num_heads=8, seq_len=100):
+    def __init__(self, mask=None, num_heads=8, seq_len=100):
         super(ALIBI, self).__init__()
         self.num_heads = num_heads
         self.seq_len = seq_len
@@ -147,10 +147,14 @@ class ALIBI(nn.Module):
         self.slopes = np.geomspace(
             start = 2 ** (-8/num_heads),
             stop = 2 ** (-8),
-            num = num_heads
+            num = num_heads,
+            endpoint=True
         )
 
-        self.mask = torch.zeros(size=(num_heads, self.seq_len, self.seq_len))
+        if mask is not None:
+            self.mask = torch.zeros_like(mask)
+        else:
+            self.mask = torch.zeros(size=(num_heads, self.seq_len, self.seq_len))
 
         for slope, index in zip(self.slopes, range(self.seq_len)):
             if index < 2:
@@ -163,5 +167,3 @@ class ALIBI(nn.Module):
     def forward(self, x):
         masked_x = x + self.mask
         return masked_x
-
-

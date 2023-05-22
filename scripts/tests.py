@@ -45,8 +45,14 @@ def run_tests(test_to_run=None, device="cpu"):
     pre_ln = True
     ablate=True
 
-    target_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
-    source_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
+    pad = True
+
+    if pad:
+        target_seq_len = 2048
+        source_seq_len = 2048
+    else:
+        target_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
+        source_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
 
     x = torch.randn(size=(32, source_seq_len, hidden_dim)).to(device)
     query = torch.randn(size=(32, target_seq_len, hidden_dim)).to(device)
@@ -252,8 +258,17 @@ def run_tests(test_to_run=None, device="cpu"):
             low=0,
             high=num_encoder_embeddings,
             size=(
-                2,
+                1,
                 source_seq_len,
+            ),
+        ).to(device)
+
+        query = torch.randint(
+            low=0,
+            high=num_encoder_embeddings,
+            size=(
+                1,
+                target_seq_len,
             ),
         ).to(device)
 
