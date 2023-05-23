@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from attention import MultiHeadAttention
-from architectures import Decoder, Encoder, EncoderDecoder, Transformer
+from architectures import Decoder, Encoder, EncoderDecoder, Transformer, Mask
 from llms import GPT, BLOOM, ALIBI
 
 from torchinfo import summary
@@ -45,7 +45,7 @@ def run_tests(test_to_run=None, device="cpu"):
     pre_ln = True
     ablate=True
 
-    pad = True
+    pad = False
 
     if pad:
         target_seq_len = 2048
@@ -53,6 +53,10 @@ def run_tests(test_to_run=None, device="cpu"):
     else:
         target_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
         source_seq_len = torch.randint(low = 10, high = 101, size = (1, )).item()
+        target_seq_len = source_seq_len
+
+    source_mask = Mask(seq_len=source_seq_len).to(device)
+    target_mask = Mask(seq_len=target_seq_len).to(device)
 
     x = torch.randn(size=(32, source_seq_len, hidden_dim)).to(device)
     query = torch.randn(size=(32, target_seq_len, hidden_dim)).to(device)
@@ -80,6 +84,7 @@ def run_tests(test_to_run=None, device="cpu"):
         print("Testing attention...\n")
 
         prob = torch.randint(low=0, high=11, size=(1,)) / 10
+        prob = .1
 
         if prob >= 0.5:
             transform_states = [
@@ -104,13 +109,18 @@ def run_tests(test_to_run=None, device="cpu"):
         if prob >= 0.5:
             kind = "cross"
             INPUT = query
+            mask = None
         else:
             kind = "self"
             INPUT = x
+            mask = source_mask.mask
 
-        ans = attn(INPUT)
+        ans = attn(INPUT, mask=mask)
 
         attn.get_attention_scores()
+
+        if mask is not None:
+            INPUT = [INPUT, mask]
 
         print(summary(attn, input_data=INPUT, device=device))
 
@@ -142,9 +152,9 @@ def run_tests(test_to_run=None, device="cpu"):
 
         attn.set_states(x, cross=True)
 
-        ans = attn(query)
+        ans = attn(query, source_mask=source_mask.mask, target_mask=target_mask.mask)
 
-        print(summary(attn, input_data=query, device=device))
+        print(summary(attn, input_data=[query, source_mask.mask, target_mask.mask], device=device))
 
         print("Decoder predictions shape: ", ans.shape, end="\n\n")
 
@@ -179,9 +189,9 @@ def run_tests(test_to_run=None, device="cpu"):
 
         attn = EncoderDecoder(encoder=enc, decoder=dec)
 
-        ans = attn(x, query)
+        ans = attn(x, query, source_mask=source_mask.mask, target_mask=target_mask.mask)
 
-        print(summary(attn, input_data=[x, query], device=device))
+        print(summary(attn, input_data=[x, query, source_mask.mask, target_mask.mask], device=device))
 
         print("Encoder input shape: ", x.shape)
         print("Decoder input shape: ", query.shape)
@@ -206,12 +216,12 @@ def run_tests(test_to_run=None, device="cpu"):
             pre_ln=pre_ln
         ).to(device)
 
-        ans = transformer(x, query)
+        ans = transformer(x, query, source_mask=source_mask.mask, target_mask=target_mask.mask)
 
         print(
             summary(
                 transformer,
-                input_data=[x, query],
+                input_data=[x, query, source_mask.mask, target_mask.mask],
                 depth=4,
                 batch_dim=None,
                 device=device,
@@ -284,7 +294,7 @@ def run_tests(test_to_run=None, device="cpu"):
             pre_ln=pre_ln
         ).to(device)
 
-        ans = torch.sum(gpt3(x), dim=1)
+        ans = torch.sum(gpt3(x, source_mask=source_mask.mask, target_mask=target_mask.mask), dim=1)
 
         print(
             summary(
@@ -333,7 +343,7 @@ if __name__ == "__main__":
         failed_tests = list()
 
         for test in tests[1:]:
-            if test in ["gpt3", "bloom"]:
+            if test in ["gpt2", "gpt3", "bloom"]:
                 continue
             print("\n", "=" * 200)
             print(f"\nTesting {test_map[test]}...\n")

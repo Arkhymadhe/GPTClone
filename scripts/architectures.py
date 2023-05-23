@@ -36,6 +36,17 @@ class EmbeddingSystem(nn.Module):
         return x
 
 
+class Mask(nn.Module):
+    def __init__(self, seq_len=10):
+        super().__init__()
+        self.seq_len = seq_len
+        self.mask = torch.full(size = (1, seq_len, seq_len), fill_value=-torch.inf)
+        self.mask = torch.triu(self.mask, diagonal=1)
+
+    @torch.no_grad()
+    def forward(self, x):
+        return x + self.mask
+
 class Encoder(nn.Module):
     def __init__(
         self,

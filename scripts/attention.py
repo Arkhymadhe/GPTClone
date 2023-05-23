@@ -45,8 +45,8 @@ class Attention(nn.Module):
 
         alignment_vectors = self.get_alignment_vectors(query)
 
-        if mask:
-            alignment_vectors = mask * alignment_vectors
+        if mask is not None:
+            alignment_vectors = mask.to(self.transformed_values.device) + alignment_vectors
 
         self.attention_scores = torch.softmax(alignment_vectors, dim=-1).detach()
 
