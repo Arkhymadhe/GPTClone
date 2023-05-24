@@ -31,7 +31,7 @@ class Attention(nn.Module):
 
     def get_alignment_vectors(self, query):
         alignment_vectors = torch.matmul(query, self.transformed_keys.transpose(-2, -1))
-        alignment_vectors /= (self.transformed_keys.size(-1) ** .5)
+        alignment_vectors /= self.transformed_keys.size(-1) ** 0.5
 
         return alignment_vectors
 
@@ -46,7 +46,8 @@ class Attention(nn.Module):
         alignment_vectors = self.get_alignment_vectors(query)
 
         if mask is not None:
-            alignment_vectors = mask.to(self.transformed_values.device) + alignment_vectors
+            # alignment_vectors = mask.to(self.transformed_values.device) + alignment_vectors
+            alignment_vectors = mask(alignment_vectors)
 
         self.attention_scores = torch.softmax(alignment_vectors, dim=-1).detach()
 
