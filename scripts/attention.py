@@ -19,10 +19,10 @@ class Attention(nn.Module):
 
         if transform_states:
             self.values_mlp = nn.Linear(
-                in_features=state_dim, out_features=self.hidden_dim, bias=False
+                in_features=state_dim, out_features=self.hidden_dim, bias=True
             )
             self.keys_mlp = nn.Linear(
-                in_features=state_dim, out_features=self.hidden_dim, bias=False
+                in_features=state_dim, out_features=self.hidden_dim, bias=True
             )
 
     def set_states(self, states):
@@ -31,7 +31,7 @@ class Attention(nn.Module):
 
     def get_alignment_vectors(self, query):
         alignment_vectors = torch.matmul(query, self.transformed_keys.transpose(-2, -1))
-        alignment_vectors /= (self.transformed_keys.size(-1) ** .5)
+        alignment_vectors /= self.transformed_keys.size(-1) ** 0.5
 
         return alignment_vectors
 
@@ -79,7 +79,7 @@ class MultiHeadAttention(nn.Module):
         self.transform_states = transform_states
 
         self.query_transform = nn.Linear(
-            in_features=self.state_dim, out_features=self.hidden_dim, bias=False
+            in_features=self.state_dim, out_features=self.hidden_dim, bias=True
         )
 
         if not narrow:
@@ -98,7 +98,7 @@ class MultiHeadAttention(nn.Module):
             self.context_transform = nn.Linear(
                 in_features=sum([head.hidden_dim for head in self.attention_heads]),
                 out_features=self.hidden_dim,
-                bias=False,
+                bias=True,
             )
 
         else:
@@ -112,7 +112,7 @@ class MultiHeadAttention(nn.Module):
             )
 
             self.context_transform = nn.Linear(
-                in_features=self.hidden_dim, out_features=self.hidden_dim, bias=False
+                in_features=self.hidden_dim, out_features=self.hidden_dim, bias=True
             )
 
     def set_states(self, states):

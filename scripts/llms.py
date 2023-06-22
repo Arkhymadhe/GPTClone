@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 
-from architectures import Transformer, EmbeddingSystem
+from architectures import Transformer
+from encoding import EmbeddingSystem
 
 
 class GPT(nn.Module):
@@ -16,7 +17,7 @@ class GPT(nn.Module):
         narrow=True,
         pre_ln=False,
         transform_states=True,
-        ablate=True
+        ablate=True,
     ):
         super(GPT, self).__init__()
 
@@ -45,7 +46,7 @@ class GPT(nn.Module):
             state_dim=self.embedding_dim,
             num_heads=self.num_heads,
             ablate=ablate,
-            pre_ln=pre_ln
+            pre_ln=pre_ln,
         )
 
     def forward(self, x, source_mask=None, target_mask=None):
@@ -63,10 +64,10 @@ class GPTHead(nn.Module):
         super(GPTHead, self).__init__()
         self.decoder_head = nn.Sequential(
             nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=True
             ),
             nn.ReLU(),
-            nn.Linear(in_features=int(hidden_dim * 4), out_features=vocab, bias=False),
+            nn.Linear(in_features=int(hidden_dim * 4), out_features=vocab, bias=True),
         )
 
     def forward(self, x):
@@ -75,7 +76,8 @@ class GPTHead(nn.Module):
 
 
 class BLOOM(nn.Module):
-    def __init__(self,
+    def __init__(
+        self,
         states=None,
         num_heads=96,
         num_embeddings=50257,
@@ -85,7 +87,8 @@ class BLOOM(nn.Module):
         narrow=True,
         pre_ln=False,
         transform_states=True,
-        ablate=True):
+        ablate=True,
+    ):
         super(BLOOM, self).__init__()
 
         self.embedding_dim = embedding_dim
@@ -116,15 +119,18 @@ class BLOOM(nn.Module):
             state_dim=self.embedding_dim,
             num_heads=self.num_heads,
             ablate=ablate,
-            pre_ln=pre_ln
+            pre_ln=pre_ln,
         )
+
     def forward(self, x, source_mask=None, target_mask=None):
         x_new = self.input_embedding_system(x)
         x_new = self.input_layer_norm(x_new)
 
-        x_new = self.decoder(x_new, x_new, source_mask=source_mask, target_mask=target_mask)
+        x_new = self.decoder(
+            x_new, x_new, source_mask=source_mask, target_mask=target_mask
+        )
         x_new = self.output_layer_norm(x_new)
-        #x_new = self.output_embedding_system(x_new)
+        # x_new = self.output_embedding_system(x_new)
 
         return x_new
 
@@ -133,6 +139,6 @@ class BLOOMHead(nn.Module):
     def __init__(self):
         super(BLOOMHead, self).__init__()
         raise NotImplementedError
+
     def forward(self, x):
         raise NotImplementedError
-

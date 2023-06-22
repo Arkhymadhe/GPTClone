@@ -4,38 +4,6 @@ from torch import nn
 from attention import MultiHeadAttention
 
 
-class TokenEmbedder(nn.Module):
-    def __init__(self, num_embeddings=1024, embedding_dim=128):
-        super().__init__()
-        self.embedding_layer = nn.Embedding(
-            num_embeddings=num_embeddings, embedding_dim=embedding_dim
-        )
-
-    def forward(self, x):
-        return self.embedding_layer(x)
-
-
-class EmbeddingSystem(nn.Module):
-    def __init__(
-        self,
-        num_text_embeddings=1024,
-        text_embedding_dim=128,
-        num_pos_embeddings=1024,
-        pos_embedding_dim=128,
-    ):
-        super().__init__()
-        self.encoder_embedding = TokenEmbedder(num_text_embeddings, text_embedding_dim)
-        self.encoder_pos_embedding = TokenEmbedder(
-            num_pos_embeddings, pos_embedding_dim
-        )
-
-    def forward(self, x):
-        x = self.encoder_embedding(x) + self.encoder_pos_embedding(
-            torch.arange(0, x.shape[-1], 1).to(x.device)
-        )
-        return x
-
-
 class Encoder(nn.Module):
     def __init__(
         self,
@@ -55,11 +23,11 @@ class Encoder(nn.Module):
         )
         self.transform_vector = nn.Sequential(
             nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=False
+                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=True
             ),
             nn.LeakyReLU(negative_slope=0.2),
             nn.Linear(
-                in_features=int(hidden_dim * 1.5), out_features=hidden_dim, bias=False
+                in_features=int(hidden_dim * 1.5), out_features=hidden_dim, bias=True
             ),
         )
         return
@@ -100,13 +68,13 @@ class Decoder(nn.Module):
         )
         self.transform_vector = nn.Sequential(
             nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=False
+                in_features=hidden_dim, out_features=int(hidden_dim * 1.5), bias=True
             ),
             nn.LeakyReLU(negative_slope=0.2),
             nn.Linear(
                 in_features=int(hidden_dim * 1.5),
                 out_features=num_embeddings,
-                bias=False,
+                bias=True,
             ),
         )
         return
@@ -179,7 +147,7 @@ class TransformerEncoderBlock(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
-        pre_ln=False
+        pre_ln=False,
     ):
         super().__init__()
 
@@ -195,18 +163,18 @@ class TransformerEncoderBlock(nn.Module):
         )
         self.feed_forward = nn.Sequential(
             nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=True
             ),
             nn.ReLU(),
             nn.Linear(
-                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=False
+                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=True
             ),
         )
         self.layer_norm1 = nn.LayerNorm(hidden_dim)
         self.layer_norm2 = nn.LayerNorm(hidden_dim)
 
-        self.dropout1 = nn.Dropout(.5)
-        self.dropout2 = nn.Dropout(.5)
+        self.dropout1 = nn.Dropout(0.5)
+        self.dropout2 = nn.Dropout(0.5)
 
     def forward(self, x, source_mask=None):
         self.attention.set_states(x)
@@ -261,11 +229,11 @@ class TransformerDecoderBlock(nn.Module):
         )
         self.feed_forward = nn.Sequential(
             nn.Linear(
-                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=False
+                in_features=hidden_dim, out_features=int(hidden_dim * 4), bias=True
             ),
             nn.ReLU(),
             nn.Linear(
-                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=False
+                in_features=int(hidden_dim * 4), out_features=hidden_dim, bias=True
             ),
         )
 
@@ -282,17 +250,25 @@ class TransformerDecoderBlock(nn.Module):
             self.cross_attention.set_states(encoder_states)
 
         if self.pre_ln:
-            x = x + self.dropout1(self.masked_attention(self.layer_norm1(x), mask=target_mask))
+            x = x + self.dropout1(
+                self.masked_attention(self.layer_norm1(x), mask=target_mask)
+            )
 
             if not self.ablate:
-                x = x + self.dropout2(self.cross_attention(self.layer_norm2(x), mask=source_mask))
+                x = x + self.dropout2(
+                    self.cross_attention(self.layer_norm2(x), mask=source_mask)
+                )
 
             x = x + self.dropout3(self.feed_forward(self.layer_norm3(x)))
         else:
-            x = self.layer_norm1(x + self.dropout1(self.masked_attention(x, mask=target_mask)))
+            x = self.layer_norm1(
+                x + self.dropout1(self.masked_attention(x, mask=target_mask))
+            )
 
             if not self.ablate:
-                x = self.layer_norm2(x + self.dropout2(self.cross_attention(x, mask=source_mask)))
+                x = self.layer_norm2(
+                    x + self.dropout2(self.cross_attention(x, mask=source_mask))
+                )
 
             x = self.layer_norm3(x + self.dropout3(self.feed_forward(x)))
 
@@ -309,7 +285,7 @@ class TransformerEncoder(nn.Module):
         hidden_dim=128,
         state_dim=128,
         num_heads=32,
-        pre_ln=False
+        pre_ln=False,
     ):
         super(TransformerEncoder, self).__init__()
 
@@ -321,7 +297,7 @@ class TransformerEncoder(nn.Module):
                 hidden_dim=hidden_dim,
                 state_dim=state_dim,
                 num_heads=num_heads,
-                pre_ln=pre_ln
+                pre_ln=pre_ln,
             )
             for _ in range(num_encoder_blocks)
         ]
@@ -345,7 +321,7 @@ class TransformerDecoder(nn.Module):
         state_dim=128,
         num_heads=32,
         ablate=True,
-        pre_ln=False
+        pre_ln=False,
     ):
         super(TransformerDecoder, self).__init__()
 
@@ -358,7 +334,7 @@ class TransformerDecoder(nn.Module):
                 state_dim=state_dim,
                 num_heads=num_heads,
                 ablate=ablate,
-                pre_ln=pre_ln
+                pre_ln=pre_ln,
             )
             for _ in range(num_decoder_blocks)
         ]
@@ -402,7 +378,7 @@ class Transformer(nn.Module):
                 state_dim=state_dim,
                 num_heads=num_heads,
                 num_encoder_blocks=num_encoder_blocks,
-                pre_ln=pre_ln
+                pre_ln=pre_ln,
             )
 
         self.decoder = TransformerDecoder(
@@ -414,7 +390,7 @@ class Transformer(nn.Module):
             num_heads=num_heads,
             num_decoder_blocks=num_decoder_blocks,
             ablate=ablate,
-            pre_ln=pre_ln
+            pre_ln=pre_ln,
         )
 
     def forward(self, x_encoder, x_decoder, source_mask=None, target_mask=None):
@@ -426,4 +402,3 @@ class Transformer(nn.Module):
         )
 
         return x_decoder
-
