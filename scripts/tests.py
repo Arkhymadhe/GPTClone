@@ -253,8 +253,8 @@ def run_tests(test_to_run=None, device="cpu"):
     elif test_to_run in ["gpt1", "gpt2", "gpt3", "bloom"]:
         model = BLOOM if test_to_run == "bloom" else GPT
         if test_to_run == "gpt1":
-            num_encoder_embeddings = 50257
-            max_token = 1024
+            num_encoder_embeddings = 40476
+            max_token = 512
             narrow = True
             num_heads = 12
             num_blocks = 12
@@ -288,7 +288,7 @@ def run_tests(test_to_run=None, device="cpu"):
             size=(
                 1,
                 source_seq_len,
-                num_encoder_embeddings
+                embedding_dim
             ),
         ).to(device)
 
@@ -368,8 +368,8 @@ if __name__ == "__main__":
         failed_tests = list()
 
         for test in tests[1:]:
-            if test in ["gpt2", "gpt3", "bloom"]:
-                continue
+            #if test in ["gpt2", "gpt3", "bloom"]:
+             #   continue
             print("\n", "=" * 200)
             print(f"\nTesting {test_map[test]}...\n")
             try:
