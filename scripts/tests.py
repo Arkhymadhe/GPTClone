@@ -295,7 +295,7 @@ def run_tests(test_to_run=None, device="cpu"):
             num_blocks = int(96 / 3)
             embedding_dim = int(12288 / 3)
         elif test_to_run == "bloom":
-            num_encoder_embeddings = 50257
+            num_encoder_embeddings = 250680
             max_token = 2048
             narrow = True
             num_heads = 16

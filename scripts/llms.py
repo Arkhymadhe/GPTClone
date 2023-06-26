@@ -122,12 +122,17 @@ class BLOOM(nn.Module):
             pre_ln=pre_ln,
         )
 
-    def forward(self, x, source_mask=None, target_mask=None):
+    def forward(self, x, x_encoder=None, source_mask=None, target_mask=None):
         x_new = self.input_embedding_system(x)
         x_new = self.input_layer_norm(x_new)
 
+        if x_encoder is not None and source_mask is not None:
+            x_encoder = source_mask(x_encoder)
+        else:
+            x_encoder = x_new.clone()
+
         x_new = self.decoder(
-            x_new, x_new, source_mask=source_mask, target_mask=target_mask
+            x_decoder=x_new, x_encoder=x_encoder, source_mask=source_mask, target_mask=target_mask
         )
         x_new = self.output_layer_norm(x_new)
         # x_new = self.output_embedding_system(x_new)
